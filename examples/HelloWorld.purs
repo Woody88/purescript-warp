@@ -3,6 +3,7 @@ module Examples.HelloWorld where
 import Prelude
 
 import Effect (Effect)
+import Effect.Exception (throw)
 import Effect.Class.Console as Console 
 import Data.Tuple.Nested ((/\))
 import Network.Wai (responseStr, Application)
@@ -14,9 +15,10 @@ import Network.HTTP.Types.Header (hContentType)
 main :: Effect Unit
 main = do 
     let beforeMainLoop = do 
-        Console.log $ "Listening on port " <> show defaultSettingds.port
+            Console.log $ "Listening on port " <> show defaultSettings.port
     runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
 app :: Application
-app req f =
+app req f = do
+    _ <- throw "throw"
     f $ responseStr status200 [(hContentType /\ "text/plain")] "Hello World!"

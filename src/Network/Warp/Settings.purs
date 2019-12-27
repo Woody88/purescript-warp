@@ -1,17 +1,17 @@
 module Network.Warp.Settings where 
 
-import Prelude (Unit, unit, pure, bind, flip, ($), (>>=))
+import Prelude (Unit, pure, unit, ($))
 import Data.Maybe (Maybe)
 import Data.Tuple.Nested ((/\))
 import Data.String.NonEmpty (unsafeFromString) as NE
 import Effect (Effect)
+import Effect.Console as Console 
 import Effect.Exception as Ex 
-import Network.HTTP.Types (Port, Host(..))
+import Network.HTTP.Types (Host(..))
 import Network.HTTP.Types (hContentType, status500) as H
 import Network.Wai.Internal (Request, Response)
 import Network.Wai (responseStr)
 import URI.Host.RegName (unsafeFromString) as HostRegName 
-import URI.Port (unsafeFromInt) as Port 
 import Partial.Unsafe (unsafePartial)
 
 type Settings 
@@ -26,7 +26,7 @@ defaultSettings :: Settings
 defaultSettings = { port: 3000
                   , host: localhost
                   , beforeMainLoop: pure unit 
-                  , onException: \_ _ -> pure unit 
+                  , onException: \_ e -> Console.log $ Ex.message e 
                   , onExceptionResponse: defaultOnExceptionResponse
                   }
         where 
