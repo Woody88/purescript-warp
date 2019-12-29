@@ -20,6 +20,7 @@ type Settings
       , beforeMainLoop :: Effect Unit
       , onException :: Maybe Request -> Ex.Error -> Effect Unit 
       , onExceptionResponse :: Ex.Error -> Response 
+      , serverName :: String
       }
 
 defaultSettings :: Settings 
@@ -28,6 +29,7 @@ defaultSettings = { port: 3000
                   , beforeMainLoop: pure unit 
                   , onException: \_ e -> Console.log $ Ex.message e 
                   , onExceptionResponse: defaultOnExceptionResponse
+                  , serverName: "Warp/0.0.1"
                   }
         where 
             localhost = NameAddress $ HostRegName.unsafeFromString $ unsafePartial $ NE.unsafeFromString "localhost"

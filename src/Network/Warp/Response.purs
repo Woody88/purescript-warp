@@ -8,9 +8,10 @@ import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
-import Network.HTTP.Types.Header (Header, ResponseHeaders, hContentLength, hContentType)
+import Network.HTTP.Types.Header (Header, ResponseHeaders, hContentLength, hContentType, hServer)
 import Network.HTTP.Types.Status (status404)
 import Network.Wai.Internal (Response(..))
+import Network.Warp.Settings (Settings)
 import Node.Buffer (Buffer)
 import Node.Buffer as Buffer
 import Node.Encoding (Encoding(UTF8))
@@ -19,11 +20,14 @@ import Node.HTTP as HTTP
 import Node.Stream as Stream
 import Prelude (Unit, bind, discard, pure, show, unit, ($))
 
-sendResponse :: HTTP.Response -> Response -> Effect Unit
-sendResponse reply (ResponseString status headers body) = do 
+sendResponse :: Settings ->  HTTP.Response -> Response -> Effect Unit
+sendResponse settings reply (ResponseString status headers body) = do 
     buffer :: Buffer <- Buffer.fromString body UTF8
     bufferSize       <- Buffer.size buffer 
-    _                <- traverse_ (setHeader $ HTTP.setHeader reply) $ addContentLength headers bufferSize
+    _                <- traverse_ (setHeader $ HTTP.setHeader reply) 
+                            $ addContentLength bufferSize
+                            $ addServerName settings.serverName headers
+
     _                <- HTTP.setStatusCode reply status.code 
     _                <- HTTP.setStatusMessage reply status.message
 
@@ -34,8 +38,8 @@ sendResponse reply (ResponseString status headers body) = do
         done $ Right unit
         pure Aff.nonCanceler 
 
-sendResponse reply (ResponseStream status headers body) = do 
-    _ <- traverse_ (setHeader $ HTTP.setHeader reply) headers
+sendResponse settings reply (ResponseStream status headers body) = do 
+    _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
     _ <- HTTP.setStatusCode reply status.code 
     _ <- HTTP.setStatusMessage reply status.message
 
@@ -45,15 +49,18 @@ sendResponse reply (ResponseStream status headers body) = do
         _ <- Stream.onEnd body $ done $ Right unit
         pure Aff.nonCanceler
 
-sendResponse reply (ResponseFile status headers path) = 
+sendResponse settings reply (ResponseFile status headers path) = 
     Aff.launchAff_ do
-        let sendFile404 = liftEffect $ sendResponse reply sendResponseFile404
+        let sendFile404 = liftEffect $ sendResponse settings reply sendResponseFile404
             sendFile2xx = do
                 buffer <- FSAff.readFile path
                 
                 liftEffect $ do 
                     bufferSize <- Buffer.size buffer
-                    _    <- traverse_ (setHeader $ HTTP.setHeader reply) $ addContentLength headers bufferSize
+                    _    <- traverse_ (setHeader $ HTTP.setHeader reply) 
+                                $ addContentLength bufferSize 
+                                $ addServerName settings.serverName headers
+
                     _    <- HTTP.setStatusCode reply status.code 
                     _    <- HTTP.setStatusMessage reply status.message
 
@@ -66,8 +73,11 @@ sendResponse reply (ResponseFile status headers path) =
             false -> sendFile404
             true  -> sendFile2xx 
 
-addContentLength :: ResponseHeaders -> Int -> ResponseHeaders
-addContentLength hdrs l = (hContentLength /\ show l) : hdrs
+addContentLength :: Int -> ResponseHeaders -> ResponseHeaders 
+addContentLength l hdrs = (hContentLength /\ show l) : hdrs
+
+addServerName :: String -> ResponseHeaders -> ResponseHeaders 
+addServerName name hdrs = (hServer /\ name) : hdrs
 
 setHeader :: (String -> String -> Effect Unit) -> Header -> Effect Unit 
 setHeader setF (Tuple name val) = setF name val
