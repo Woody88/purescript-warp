@@ -20,5 +20,4 @@ main = do
 
 app :: Application
 app req f = do
-    _ <- throw "throw"
     f $ responseStr status200 [(hContentType /\ "text/plain")] "Hello World!"
