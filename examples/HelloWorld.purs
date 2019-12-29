@@ -3,7 +3,6 @@ module Examples.HelloWorld where
 import Prelude
 
 import Effect (Effect)
-import Effect.Exception (throw)
 import Effect.Class.Console as Console 
 import Data.Tuple.Nested ((/\))
 import Network.Wai (responseStr, Application)
