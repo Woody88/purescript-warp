@@ -29,14 +29,13 @@ runSettings settings app = do
     HTTP.listen server options settings.beforeMainLoop 
     Server.onError (Server.fromHttpServer server) (settings.onException Nothing)
 
-
 handleRequest :: Settings -> Application -> HTTP.Request -> HTTP.Response -> Effect Unit 
 handleRequest settings app httpreq httpres = Aff.launchAff_ do 
-    let onHandlerError  = (liftEffect <<< sendResponse httpres <<< settings.onExceptionResponse)
+    let onHandlerError  = (liftEffect <<< sendResponse settings httpres <<< settings.onExceptionResponse)
         onHandleError r e = settings.onException r e *> Ex.throwException e
     handler <- Aff.attempt $ Aff.makeAff \done -> do
                 result <- Ex.try $ recvRequest httpreq >>= \req -> do 
-                            handle <- Ex.try $ app req (sendResponse httpres)
+                            handle <- Ex.try $ app req (sendResponse settings httpres)
                             either (onHandleError (Just req)) pure handle
                 done $ result 
                 pure Aff.nonCanceler
