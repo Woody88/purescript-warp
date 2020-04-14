@@ -1,5 +1,8 @@
 module Network.Warp.Response where 
 
+
+import Prelude (Unit, bind, discard, pure, show, unit, ($))
+
 import Data.Array ((:))
 import Data.Either (Either(..))
 import Data.Foldable (traverse_)
@@ -18,7 +21,7 @@ import Node.Encoding (Encoding(UTF8))
 import Node.FS.Aff as FSAff
 import Node.HTTP as HTTP
 import Node.Stream as Stream
-import Prelude (Unit, bind, discard, pure, show, unit, ($))
+import Unsafe.Coerce (unsafeCoerce)
 
 sendResponse :: Settings ->  HTTP.Response -> Response -> Effect Unit
 sendResponse settings reply (ResponseString status headers body) = do 
@@ -48,6 +51,10 @@ sendResponse settings reply (ResponseStream status headers body) = do
         _ <- Stream.pipe body stream
         _ <- Stream.onEnd body $ done $ Right unit
         pure Aff.nonCanceler
+
+-- TODO: need to find a better approach than unsafeCoerce
+sendResponse settings reply (ResponseSocket cb) = do 
+    cb (unsafeCoerce reply)
 
 sendResponse settings reply (ResponseFile status headers path) = 
     Aff.launchAff_ do

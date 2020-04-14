@@ -1,35 +1,38 @@
 module Network.Warp.Request where 
 
 import Prelude
+
 import Data.Either (either)
-import Data.Int as Int 
-import Data.Nullable as Nullable
+import Data.Int as Int
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Nullable as Nullable
 import Effect (Effect)
 import Effect.Aff (makeAff, nonCanceler) as Aff
 import Effect.Ref as Ref
-import Foreign.Object as Object 
-import Text.Parsing.Parser as P
-import Network.HTTP.Types (Method(..), fromString) as Method 
+import Foreign.Object as Object
+import Network.HTTP.Types (Method(..), fromString) as Method
 import Network.HTTP.Types.Version as Version
 import Network.Wai.Internal (Request(..), RequestBodyLength(..))
-import Network.Warp.FFI.Socket (fromHttpRequest) as Socket 
 import Network.Warp.FFI.HttpIncoming as HttpIncoming
-import Node.HTTP as HTTP 
-import Node.URL as Url
-import Node.Stream as Stream
+import Network.Warp.FFI.Socket (fromHttpRequest) as Socket
+import Node.Buffer (Buffer)
 import Node.Buffer as Buffer
-import Node.Net.Socket (remoteAddress, remotePort) as Socket 
+import Node.HTTP as HTTP
+import Node.Net.Socket (remoteAddress, remotePort) as Socket
+import Node.Net.Socket as Net
+import Node.Stream as Stream
+import Node.URL as Url
+import Text.Parsing.Parser as P
 import URI.Common (wrapParser) as Uri
-import URI.Path (Path(..))
-import URI.Path as Path 
-import URI.Query as  Query 
 import URI.Extra.QueryPairs (QueryPairs(..))
 import URI.Extra.QueryPairs as QueryPairs
-import URI.HostPortPair as HostPortPair 
+import URI.HostPortPair as HostPortPair
+import URI.Path (Path(..))
+import URI.Path as Path
+import URI.Query as Query
 
-recvRequest :: HTTP.Request -> Effect Request  
-recvRequest httpreq = do
+recvRequest :: HTTP.Request -> Maybe Net.Socket -> Maybe Buffer -> Effect Request  
+recvRequest httpreq sck rawHeader = do
     remoteHost <- getRemoteHost
     pure $ 
         Request 
@@ -41,6 +44,8 @@ recvRequest httpreq = do
             , requestHeaders
             , bodyLength
             , body
+            , socket: sck 
+            , rawHeader: rawHeader
             , headerHost
             , headerRange: Object.lookup "range" $ HTTP.requestHeaders httpreq
             , headerUserAgent: Object.lookup "user-agent" $ HTTP.requestHeaders httpreq
@@ -48,6 +53,7 @@ recvRequest httpreq = do
             , rawPathInfo: HTTP.requestURL httpreq
             , rawQueryString: fromMaybe "" $ Nullable.toMaybe url.query
             , isSecure: false
+            , nodeRequest: Just httpreq
             }
 
 
