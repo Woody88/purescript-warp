@@ -15,7 +15,7 @@ import Node.Buffer (Buffer)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
 import Node.Net.Socket (Socket)
-import Prelude (Unit, bind, discard, pure, ($), (*>), (<<<), (>>=))
+import Prelude (Unit, bind, const, discard, pure, unit, ($), (*>), (<<<), (>>=))
 import URI.Host as Host
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -43,16 +43,10 @@ runSettings settings app = do
  
 handleRequest :: Settings -> Application -> HTTP.Request -> Maybe Socket -> Maybe Buffer -> HTTP.Response -> Effect Unit 
 handleRequest settings app httpreq sck rawHead httpres = do 
-    Aff.launchAff_ do 
-        let onHandlerError  = (liftEffect <<< sendResponse settings httpres <<< settings.onExceptionResponse)
-            onHandleError r e = settings.onException r e *> Ex.throwException e
-        handler <- Aff.attempt $ Aff.makeAff \done -> do
-                    result <- Ex.try $ recvRequest httpreq sck rawHead >>= \req -> do 
-                                handle <- Ex.try $ app req (sendResponse settings httpres)
-                                either (onHandleError (Just req)) pure handle
-                    done $ result 
-                    pure Aff.nonCanceler
-        either onHandlerError pure handler 
+    let onHandleError r e = settings.onException r e *> Ex.throwException e
+    liftEffect $ recvRequest httpreq sck rawHead >>= \req -> do 
+        handle <- Ex.try $ app req (sendResponse settings httpres)
+        either (onHandleError (Just req)) (const $ pure unit) handle
 
 foreign import createServer :: Effect HTTP.Server 
 foreign import onRequest  :: HTTP.Server -> (HTTP.Request -> HTTP.Response -> Effect Unit) -> Effect Unit
