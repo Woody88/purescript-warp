@@ -25,33 +25,25 @@ import Unsafe.Coerce (unsafeCoerce)
 
 sendResponse :: Settings ->  HTTP.Response -> Response -> Effect Unit
 sendResponse settings reply (ResponseString status headers body) = do 
-    buffer :: Buffer <- Buffer.fromString body UTF8
-    bufferSize       <- Buffer.size buffer 
+    let stream = HTTP.responseAsStream reply
+    buffer :: Buffer <- Buffer.fromString body UTF8 
     _                <- traverse_ (setHeader $ HTTP.setHeader reply) 
-                            $ addContentLength bufferSize
                             $ addServerName settings.serverName headers
 
     _                <- HTTP.setStatusCode reply status.code 
     _                <- HTTP.setStatusMessage reply status.message
 
-    Aff.launchAff_ $ Aff.makeAff \done -> do
-        let stream = HTTP.responseAsStream reply
-        _    <- Stream.write stream buffer $ pure unit
-        _    <- Stream.end stream $ pure unit
-        done $ Right unit
-        pure Aff.nonCanceler 
-
-sendResponse settings reply (ResponseStream status headers body) = do 
+    _                <- Stream.write stream buffer $ pure unit
+    Stream.end stream $ pure unit
+ 
+sendResponse settings reply (ResponseStream status headers respstream) = do 
+    let stream = HTTP.responseAsStream reply
     _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
     _ <- HTTP.setStatusCode reply status.code 
     _ <- HTTP.setStatusMessage reply status.message
-
-    Aff.launchAff_ $ Aff.makeAff \done -> do
-        let stream = HTTP.responseAsStream reply
-        _ <- Stream.pipe body stream
-        _ <- Stream.onEnd body $ done $ Right unit
-        pure Aff.nonCanceler
-
+    _ <- Stream.pipe respstream stream
+    Stream.onEnd respstream $ pure unit 
+    
 -- TODO: need to find a better approach than unsafeCoerce
 sendResponse settings reply (ResponseSocket cb) = do 
     cb (unsafeCoerce reply)
@@ -65,7 +57,6 @@ sendResponse settings reply (ResponseFile status headers path) =
                 liftEffect $ do 
                     bufferSize <- Buffer.size buffer
                     _    <- traverse_ (setHeader $ HTTP.setHeader reply) 
-                                $ addContentLength bufferSize 
                                 $ addServerName settings.serverName headers
 
                     _    <- HTTP.setStatusCode reply status.code 
