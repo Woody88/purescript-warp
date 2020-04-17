@@ -1,11 +1,7 @@
 module Network.Warp.Run where
 
-import Data.Either (either)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Aff as Aff
-import Effect.Class (liftEffect)
-import Effect.Exception as Ex
 import Network.Wai (Application)
 import Network.Warp.FFI.Server (fromHttpServer) as Server
 import Network.Warp.Request (recvRequest)
@@ -15,7 +11,7 @@ import Node.Buffer (Buffer)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
 import Node.Net.Socket (Socket)
-import Prelude (Unit, bind, const, discard, pure, unit, ($), (*>), (<<<), (>>=))
+import Prelude (Unit, bind, discard, (>>=))
 import URI.Host as Host
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -33,20 +29,19 @@ runSettings settings app = do
     server <- createServer 
 
     onRequest server \req res -> do 
-        handleRequest settings app req Nothing Nothing res
+        handleRequest settings app req Nothing res
 
     onUpgrade server \req socket rawHead -> do 
-        handleRequest settings app req (Just socket) (Just rawHead) (unsafeCoerce socket)
+        handleRequest settings app req (Just rawHead) (unsafeCoerce socket)
 
     HTTP.listen server options settings.beforeMainLoop 
     Server.onError (Server.fromHttpServer server) (settings.onException Nothing)
  
-handleRequest :: Settings -> Application -> HTTP.Request -> Maybe Socket -> Maybe Buffer -> HTTP.Response -> Effect Unit 
-handleRequest settings app httpreq sck rawHead httpres = do 
-    let onHandleError r e = settings.onException r e *> Ex.throwException e
-    liftEffect $ recvRequest httpreq sck rawHead >>= \req -> do 
-        handle <- Ex.try $ app req (sendResponse settings httpres)
-        either (onHandleError (Just req)) (const $ pure unit) handle
+handleRequest :: Settings -> Application -> HTTP.Request -> Maybe Buffer -> HTTP.Response -> Effect Unit 
+handleRequest settings app httpreq rawHead httpres = do 
+    recvRequest httpreq rawHead >>= \req -> do 
+        app req (sendResponse settings httpres)
+
 
 foreign import createServer :: Effect HTTP.Server 
 foreign import onRequest  :: HTTP.Server -> (HTTP.Request -> HTTP.Response -> Effect Unit) -> Effect Unit

@@ -1,10 +1,9 @@
 module Network.Warp.Response where 
 
 
-import Prelude (Unit, bind, discard, pure, show, unit, ($))
+import Prelude (Unit, bind, pure, show, unit, ($))
 
 import Data.Array ((:))
-import Data.Either (Either(..))
 import Data.Foldable (traverse_)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
@@ -15,26 +14,22 @@ import Network.HTTP.Types.Header (Header, ResponseHeaders, hContentLength, hCont
 import Network.HTTP.Types.Status (status404)
 import Network.Wai.Internal (Response(..))
 import Network.Warp.Settings (Settings)
-import Node.Buffer (Buffer)
 import Node.Buffer as Buffer
-import Node.Encoding (Encoding(UTF8))
 import Node.FS.Aff as FSAff
 import Node.HTTP as HTTP
 import Node.Stream as Stream
 import Unsafe.Coerce (unsafeCoerce)
 
-sendResponse :: Settings ->  HTTP.Response -> Response -> Effect Unit
-sendResponse settings reply (ResponseString status headers body) = do 
-    let stream = HTTP.responseAsStream reply
-    buffer :: Buffer <- Buffer.fromString body UTF8 
+foreign import end :: HTTP.Response -> String -> Effect Unit 
+
+sendResponse :: Settings -> HTTP.Response -> Response -> Effect Unit
+sendResponse settings reply (ResponseString status headers data_) = do 
     _                <- traverse_ (setHeader $ HTTP.setHeader reply) 
                             $ addServerName settings.serverName headers
 
     _                <- HTTP.setStatusCode reply status.code 
     _                <- HTTP.setStatusMessage reply status.message
-
-    _                <- Stream.write stream buffer $ pure unit
-    Stream.end stream $ pure unit
+    end reply data_ 
  
 sendResponse settings reply (ResponseStream status headers respstream) = do 
     let stream = HTTP.responseAsStream reply
