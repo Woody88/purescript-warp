@@ -1,8 +1,6 @@
 module Network.Warp.Response where 
 
 
-import Prelude (Unit, bind, pure, show, unit, ($))
-
 import Data.Array ((:))
 import Data.Foldable (traverse_)
 import Data.Tuple (Tuple(..))
@@ -15,21 +13,23 @@ import Network.HTTP.Types.Status (status404)
 import Network.Wai.Internal (Response(..))
 import Network.Warp.Settings (Settings)
 import Node.Buffer as Buffer
+import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSAff
 import Node.HTTP as HTTP
 import Node.Stream as Stream
+import Prelude (Unit, bind, mempty, pure, show, unit, void, ($))
 import Unsafe.Coerce (unsafeCoerce)
-
-foreign import end :: HTTP.Response -> String -> Effect Unit 
 
 sendResponse :: Settings -> HTTP.Response -> Response -> Effect Unit
 sendResponse settings reply (ResponseString status headers data_) = do 
-    _                <- traverse_ (setHeader $ HTTP.setHeader reply) 
-                            $ addServerName settings.serverName headers
+    let stream = HTTP.responseAsStream reply
+    _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
+    _ <- HTTP.setStatusCode reply status.code 
+    _ <- HTTP.setStatusMessage reply status.message
 
-    _                <- HTTP.setStatusCode reply status.code 
-    _                <- HTTP.setStatusMessage reply status.message
-    end reply data_ 
+    _ <- Stream.writeString stream UTF8 data_ mempty
+    
+    void $ Stream.end stream mempty
  
 sendResponse settings reply (ResponseStream status headers respstream) = do 
     let stream = HTTP.responseAsStream reply

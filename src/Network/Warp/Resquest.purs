@@ -5,6 +5,8 @@ import Prelude
 import Data.Int as Int
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Nullable as Nullable
+import Data.String (Pattern(..))
+import Data.String as String
 import Effect (Effect)
 import Effect.Aff (makeAff, nonCanceler) as Aff
 import Effect.Ref as Ref
@@ -50,7 +52,7 @@ recvRequest httpreq rawHeader = do
     where 
         url  = Url.parse $ HTTP.requestURL httpreq
         requestHeaders =  Object.toUnfoldable $ HTTP.requestHeaders httpreq
-        pathInfo = ""
+        pathInfo = String.split (Pattern "/") $ fromMaybe mempty $ Nullable.toMaybe url.pathname
 
         bodyLength = do
             let (cl :: Maybe String) = Object.lookup "content-length" $ HTTP.requestHeaders httpreq
