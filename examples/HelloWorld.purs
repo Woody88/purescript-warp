@@ -3,7 +3,7 @@ module Examples.HelloWorld where
 import Prelude
 
 import Effect (Effect)
--- import Effect.Class.Console as Console 
+import Effect.Class.Console as Console 
 import Data.Tuple.Nested ((/\))
 import Network.Wai (responseStr, Application)
 import Network.Warp.Run (runSettings)
@@ -13,9 +13,9 @@ import Network.HTTP.Types.Header (hContentType)
 
 main :: Effect Unit
 main = do 
-    -- let beforeMainLoop = do 
-    --         Console.log $ "Listening on port " <> show defaultSettings.port
-    runSettings defaultSettings app 
+    let beforeMainLoop = do 
+            Console.log $ "Listening on port " <> show defaultSettings.port
+    void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
 app :: Application
 app req f = do
