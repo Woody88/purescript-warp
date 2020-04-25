@@ -4,7 +4,7 @@ warp is a server library that wraps node's http library with an API inspired by 
 
 ## Installation
 
-This is not yet published to pursuit. 
+***This library is not yet published to pursuit.***  
 You can install this package by adding it to your packages.dhall:
 
 ```dhall
