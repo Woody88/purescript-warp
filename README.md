@@ -1,6 +1,6 @@
 # Warp
 
-warp is a server library that wraps node's http library with an API inspired by the haskell version.   
+A server library that wraps node's http library with an API inspired by the haskell version.   
 
 ## Installation
 
