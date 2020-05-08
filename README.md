@@ -9,20 +9,24 @@ You can install this package by adding it to your packages.dhall:
 
 ```dhall
 let additions =
-  { purescript-warp =
-       { dependencies =
-          [ "node-fs-aff"
-          , "node-net"
-          , "node-url"
-          , "wai"
-          ]
-       , repo =
-           "https://github.com/Woody88/purescript-warp.git"
-       , version =
-           "master"
-       }
+  { warp =
+      { dependencies =
+        [ "node-fs-aff"
+        , "node-net"
+        , "node-url"
+        , "wai"
+        ]
+      , repo =
+          "https://github.com/Woody88/purescript-warp.git"
+      , version =
+          "master"
+      }
   }
 ```
+```console
+user@user:~$ spago install warp
+```
+
 ## Usage 
 
 ### Hello World 
@@ -39,11 +43,11 @@ import Network.HTTP.Types.Header (hContentType)
 
 main :: Effect Unit
 main = do 
-    let beforeMainLoop = do 
-            Console.log $ "Listening on port " <> show defaultSettings.port
-    void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
+  let beforeMainLoop = do 
+          Console.log $ "Listening on port " <> show defaultSettings.port
+  void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
 app :: Application
 app req f = do
-    f $ responseStr status200 [(hContentType /\ "text/plain")] "Hello World!"
+  f $ responseStr status200 [(hContentType /\ "text/plain")] "Hello World!"
 ```
