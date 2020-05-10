@@ -1,10 +1,8 @@
 module Network.Warp.Run where
 
-import Prelude (Unit, pure, void, bind, discard, ($), (>>=))
-
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Network.Wai (Application)
+import Network.Wai (Application, Request(..))
 import Network.Warp.FFI.Server (fromHttpServer) as Server
 import Network.Warp.Request (recvRequest)
 import Network.Warp.Response (sendResponse)
@@ -14,7 +12,7 @@ import Node.HTTP (Server)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
 import Node.Net.Socket (Socket)
-import URI.Host as Host
+import Prelude (Unit, pure, void, bind, discard, ($), (>>=))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- -- | Run an 'Application' on the given port.
@@ -27,7 +25,7 @@ run p app = void $ runSettings (defaultSettings { port = p }) app
 runSettings :: Settings -> Application -> Effect Server 
 runSettings settings app = do 
     
-    let options = { port: settings.port, hostname: Host.print settings.host, backlog: Nothing }
+    let options = { port: settings.port, hostname: settings.host, backlog: Nothing }
     server <- createServer 
 
     onRequest server \req res -> do 
@@ -43,8 +41,8 @@ runSettings settings app = do
  
 handleRequest :: Settings -> Application -> HTTP.Request -> Maybe Buffer -> HTTP.Response -> Effect Unit 
 handleRequest settings app httpreq rawHead httpres = do 
-    recvRequest httpreq rawHead >>= \req -> do 
-        app req (sendResponse settings httpres)
+    recvRequest httpreq rawHead >>= \req@(Request r) -> do 
+        app req (sendResponse settings r.requestHeaders httpres)
 
 foreign import createServer :: Effect HTTP.Server 
 foreign import onRequest  :: HTTP.Server -> (HTTP.Request -> HTTP.Response -> Effect Unit) -> Effect Unit
