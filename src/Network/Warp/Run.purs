@@ -1,4 +1,9 @@
-module Network.Warp.Run where
+module Network.Warp.Run 
+    ( run
+    , runSettings
+    , handleRequest
+    ) 
+    where
 
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
