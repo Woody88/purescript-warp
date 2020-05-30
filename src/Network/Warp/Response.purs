@@ -22,6 +22,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSAff
 import Node.HTTP as HTTP
 import Node.Stream as Stream
+import Partial.Unsafe (unsafeCrashWith)
 import Prelude (Unit, bind, mempty, pure, show, unit, void, ($))
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -74,7 +75,10 @@ sendResponse settings reqHead reply (ResponseFile status headers path fpart) =
               _         <- Stream.pipe filestream stream
               Stream.onEnd filestream $ pure unit
 
-addContentLength :: Int -> ResponseHeaders -> ResponseHeaders 
+sendResponse settings reqHead reply (ResponseRaw bufferCallback response) =
+  unsafeCrashWith "Not yet implemented"
+
+addContentLength :: Int -> ResponseHeaders -> ResponseHeaders
 addContentLength l hdrs = (hContentLength /\ show l) : hdrs
 
 addServerName :: String -> ResponseHeaders -> ResponseHeaders 
