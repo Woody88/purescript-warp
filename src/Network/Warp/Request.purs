@@ -10,6 +10,7 @@ import Data.String as String
 import Effect (Effect)
 import Effect.Aff (makeAff, nonCanceler) as Aff
 import Effect.Ref as Ref
+import Foreign (unsafeToForeign)
 import Foreign.Object as Object
 import Network.HTTP.Types (Method(..), fromString) as Method
 import Network.HTTP.Types.Version as Version
@@ -45,7 +46,7 @@ recvRequest httpreq rawHeader = do
             , rawPathInfo: HTTP.requestURL httpreq
             , rawQueryString: fromMaybe "" $ Nullable.toMaybe url.query
             , isSecure: false
-            , nodeRequest: Just httpreq
+            , nodeRequest: Just $ unsafeToForeign httpreq
             }
 
 
