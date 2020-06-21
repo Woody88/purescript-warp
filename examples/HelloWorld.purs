@@ -2,14 +2,15 @@ module Examples.HelloWorld where
 
 import Prelude
 
-import Effect (Effect)
-import Effect.Class.Console as Console 
 import Data.Tuple.Nested ((/\))
-import Network.Wai (responseStr, Application)
-import Network.Warp.Run (runSettings)
-import Network.Warp.Settings (defaultSettings)
+import Effect (Effect)
+import Effect.Class.Console as Console
 import Network.HTTP.Types (status200)
 import Network.HTTP.Types.Header (hContentType)
+import Network.Wai (responseStr)
+import Network.Wai.Http (Application)
+import Network.Warp.Run (runSettings)
+import Network.Warp.Settings (defaultSettings)
 
 main :: Effect Unit
 main = do 
@@ -17,6 +18,7 @@ main = do
             Console.log $ "Listening on port " <> show defaultSettings.port
     void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
-app :: Application
+app :: Application 
 app req f = do
     f $ responseStr status200 [(hContentType /\ "text/plain")] "Hello World!"
+

@@ -124,20 +124,7 @@ let upstream =
 let overrides  = {=}
 
 let additions =
-    { wai =
-      { dependencies =
-        [ "http-types"
-        , "node-buffer"
-        , "node-http"
-        , "node-net"
-        , "node-streams"
-        , "node-url"
-        ]
-      , repo =
-          "https://github.com/Woody88/purescript-wai.git"
-      , version =
-          "master"
-      }
+    { wai = ../purescript-wai/spago.dhall as Location
   , http-types =
       { dependencies =
           [ "console"

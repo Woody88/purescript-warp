@@ -13,7 +13,7 @@ import Effect.Class (liftEffect)
 import Network.HTTP.Types.Header (Header, ResponseHeaders, hContentLength, hContentType, hServer)
 import Network.HTTP.Types.Header as H
 import Network.HTTP.Types.Status (status404)
-import Network.Wai.Internal (Response(..))
+import Network.Wai (Response(..))
 import Network.Warp.FFI.FS (createReadStreamWithRange) as FS
 import Network.Warp.File (RspFileInfo(..), conditionalRequest)
 import Network.Warp.Header (condReqHeader, condResHeader)

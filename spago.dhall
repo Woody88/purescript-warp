@@ -7,6 +7,7 @@ You can edit this file as you like.
   [ "console"
   , "effect"
   , "node-fs-aff"
+  , "node-http"
   , "node-net"
   , "node-url"
   , "psci-support"
