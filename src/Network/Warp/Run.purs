@@ -1,5 +1,7 @@
 module Network.Warp.Run where
 
+import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
+
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -15,7 +17,7 @@ import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
 import Node.Net.Socket (Socket)
 import Node.Stream as Stream
-import Prelude (Unit, bind, discard, pure, unit, void, ($), (<<<))
+import Unsafe.Coerce (unsafeCoerce)
 
 -- -- -- | Run an 'Application' on the given port.
 -- -- -- | This calls 'runSettings' with 'defaultSettings'.
@@ -45,9 +47,12 @@ runSettings settings app = do
 
         app req' (liftEffect <<< sendResponse settings requestHeaders res)
 
-    onUpgrade server \req socket rawHead -> do 
-        pure unit 
-        -- app (unsafeCoerce req) (unsafeCoerce socket)
+    onUpgrade server \req socket _ -> do 
+        let req' = (HttpRequest req)    
+            requestHeaders = headers req'
+            httpres = unsafeCoerce socket -- Passing the socket as HTTP.Response to `sendResponse`
+
+        launchAff_ do app req' (liftEffect <<< sendResponse settings requestHeaders httpres)
 
     -- Handles response error
     Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe HttpRequest))
