@@ -1,4 +1,8 @@
-module Network.Warp.Run where
+module Network.Warp.Run 
+    ( runSettings
+    , run
+    ) 
+    where
 
 import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
 
@@ -42,17 +46,17 @@ runSettings settings app = do
         liftEffect $ Stream.onError reqStream (launchAff_ <<< settings.onException (Just req'))
 
         -- Handles response error
-        liftEffect $ Stream.onError resStream \err -> do 
+        liftEffect $ Stream.onError resStream \err -> launchAff_ do 
             sendResponse settings requestHeaders res $ settings.onExceptionResponse err
 
-        app req' (liftEffect <<< sendResponse settings requestHeaders res)
+        app req' (sendResponse settings requestHeaders res)
 
     onUpgrade server \req socket _ -> do 
         let req' = (HttpRequest req)    
             requestHeaders = headers req'
             httpres = unsafeCoerce socket -- Passing the socket as HTTP.Response to `sendResponse`
 
-        launchAff_ do app req' (liftEffect <<< sendResponse settings requestHeaders httpres)
+        launchAff_ do app req' (sendResponse settings requestHeaders httpres)
 
     -- Handles response error
     Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe HttpRequest))

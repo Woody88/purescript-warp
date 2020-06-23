@@ -7,8 +7,7 @@ import Data.Foldable (traverse_)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (try)
-import Effect.Aff as Aff
+import Effect.Aff (Aff, try)
 import Effect.Class (liftEffect)
 import Network.HTTP.Types.Header (Header, ResponseHeaders, hContentLength, hContentType, hServer)
 import Network.HTTP.Types.Header as H
@@ -26,32 +25,34 @@ import Partial.Unsafe (unsafeCrashWith)
 import Prelude (Unit, bind, mempty, pure, show, unit, void, ($))
 import Unsafe.Coerce (unsafeCoerce)
 
-sendResponse :: Settings -> H.RequestHeaders -> HTTP.Response -> Response -> Effect Unit
+sendResponse :: Settings -> H.RequestHeaders -> HTTP.Response -> Response -> Aff Unit
 sendResponse settings _ reply (ResponseString status headers data_) = do 
   let stream = HTTP.responseAsStream reply
-  _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
-  _ <- HTTP.setStatusCode reply status.code 
-  _ <- HTTP.setStatusMessage reply status.message
 
-  _ <- Stream.writeString stream UTF8 data_ mempty
-  
-  void $ Stream.end stream mempty
+  liftEffect do 
+    _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
+    _ <- HTTP.setStatusCode reply status.code 
+    _ <- HTTP.setStatusMessage reply status.message
+
+    _ <- Stream.writeString stream UTF8 data_ mempty
+    
+    void $ Stream.end stream mempty
  
 sendResponse settings _ reply (ResponseStream status headers respstream) = do 
   let stream = HTTP.responseAsStream reply
-  _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
-  _ <- HTTP.setStatusCode reply status.code 
-  _ <- HTTP.setStatusMessage reply status.message
-  _ <- Stream.pipe respstream stream
-  Stream.onEnd respstream $ pure unit 
+  liftEffect do 
+    _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
+    _ <- HTTP.setStatusCode reply status.code 
+    _ <- HTTP.setStatusMessage reply status.message
+    _ <- Stream.pipe respstream stream
+    Stream.onEnd respstream $ pure unit 
     
 -- TODO: need to find a better approach than unsafeCoerce
 sendResponse settings _ reply (ResponseSocket cb) = do 
   cb (unsafeCoerce reply)
 
-sendResponse settings reqHead reply (ResponseFile status headers path fpart) = 
-  Aff.launchAff_ do
-    let sendFile404 = liftEffect $ sendResponse settings reqHead reply sendResponseFile404
+sendResponse settings reqHead reply (ResponseFile status headers path fpart) = do
+    let sendFile404 = sendResponse settings reqHead reply sendResponseFile404
         stream = HTTP.responseAsStream reply
 
     efileStat <- try $ FSAff.stat path 
