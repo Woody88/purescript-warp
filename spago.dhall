@@ -4,7 +4,8 @@ You can edit this file as you like.
 -}
 { name = "purescript-warp"
 , dependencies =
-  [ "console"
+  [ "avar"
+  , "console"
   , "effect"
   , "node-fs-aff"
   , "node-http"

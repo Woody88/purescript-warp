@@ -3,9 +3,11 @@ module Test.Main where
 import Prelude
 
 import Effect (Effect)
-import Effect.Class.Console (log)
+import Effect.Aff (launchAff_)
+import Test.Spec.Reporter (consoleReporter)
+import Test.Spec.Runner (runSpec)
+import Test.Warp.ServerSpec as ServerSpec
 
 main :: Effect Unit
-main = do
-  log "🍝"
-  log "You should add some tests."
+main = launchAff_ $ runSpec [consoleReporter] do
+  ServerSpec.spec
