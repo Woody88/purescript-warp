@@ -82,7 +82,3 @@ spec = do
       it "should return 'Hello, World!'" $ \port -> do
         _ /\ message  <- simpleReq ("http://localhost:" <> show port)
         (pure message) `shouldReturn` Just "Hello, World!"
-
---     it "should allow anonymous access" do
---       c <- newClient Nothing
---       get c "/api/dogs" `shouldReturn` status200
