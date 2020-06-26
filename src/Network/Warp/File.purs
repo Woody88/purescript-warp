@@ -1,20 +1,25 @@
-module Network.Warp.File where
+module Network.Warp.File 
+  ( RspFileInfo(..)
+  , Offset
+  , Length
+  , conditionalRequest
+  ) 
+  where
 
 import Prelude
 
 import Control.Alternative ((<|>))
 import Data.Array ((:), head, null)
 import Data.DateTime (DateTime, modifyTime, setMillisecond)
-import Data.Int as Int
-import Data.JSDate as JSDate
-import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 import Network.HTTP.Types (ResponseHeaders)
 import Network.HTTP.Types as H
+import Network.Warp.FileInfo (FileInfo)
 import Network.Warp.Header (RequestHeaderCond, ResponseHeaderCond)
-import Node.FS.Stats (Stats(..))
-import Node.FS.Stats as FS
 
 -- | This module handles conditional get request for files
 type Offset = Int 
@@ -22,27 +27,31 @@ type Length = Int
 data RspFileInfo = WithoutBody H.Status
                  | WithBody H.Status H.ResponseHeaders Offset Length   
 
+derive instance rspFileInfoEq :: Eq RspFileInfo
+derive instance rspFileInfoGeneric :: Generic RspFileInfo _
+instance rspFileInfoShow :: Show RspFileInfo where 
+  show = genericShow 
+
 conditionalRequest :: 
-  FS.Stats 
+  FileInfo
   -> ResponseHeaders
   -> RequestHeaderCond 
   -> ResponseHeaderCond
   -> RspFileInfo 
-conditionalRequest (Stats fstats) hrds reqHC resHC = case condition of
+conditionalRequest fileInfo hrds reqHC resHC = case condition of
     nobody@(WithoutBody _) -> nobody
     WithBody s _ off len   -> let 
       hs1 = addContentHeaders hrds off len size
       hasLM = isJust $ resHC.lastModified
       hs = if hasLM then hs1 else lastmH <> hs1
-      in WithBody s hs off (len - 1) -- without -1 this will cause read stream to over read. 
+      in WithBody s hs off len -- without -1 this will cause read stream to over read. 
   where
-    lastmH = maybe [] (\d -> [ H.hLastModified /\ (JSDate.toUTCString $ JSDate.fromDateTime d)] ) mtime
-    mtime = JSDate.toDateTime $ fstats.mtime 
-    size  = Int.ceil fstats.size
+    lastmH = [ H.hLastModified /\ fileInfo.infoDate ]
+    size  = fileInfo.size
     mcondition t =  ifmodified reqHC size t 
               <|> ifunmodified reqHC size t
               <|> ifrange reqHC size t
-    condition = fromMaybe (unconditional reqHC size) (mtime >>= mcondition)
+    condition = fromMaybe (unconditional reqHC size) (mcondition fileInfo.infoTime)
 
 ifModifiedSince :: RequestHeaderCond -> Maybe DateTime
 ifModifiedSince = _.ifModifiedSince
@@ -73,7 +82,7 @@ ifunmodified reqH size mtime = do
       t = modifyTime (setMillisecond bottom) mtime
     pure $ if d == t
              then unconditional reqH size
-             else WithoutBody H.status412 
+             else WithoutBody H.preconditionFailed412
 
 ifrange :: RequestHeaderCond -> Int -> DateTime -> Maybe RspFileInfo
 ifrange reqH size mtime = do
@@ -84,25 +93,25 @@ ifrange reqH size mtime = do
       t = modifyTime (setMillisecond bottom) mtime
     pure $ if d == t
              then parseRange rng size
-             else WithBody H.status200 [] 0 size
+             else WithBody H.ok200 [] 0 size
 
 unconditional :: RequestHeaderCond -> Int -> RspFileInfo
 unconditional reqH size = case reqH.range of
-  Nothing  -> WithBody H.status200 [] 0 size
+  Nothing  -> WithBody H.ok200 [] 0 size
   Just rng -> parseRange rng size 
 
 parseRange :: String -> Int -> RspFileInfo
 parseRange rng size = case H.parseByteRanges rng of
-  Nothing               -> WithoutBody H.status416
+  Nothing               -> WithoutBody H.requestedRangeNotSatisfiable416
   Just x 
-    | null x            -> WithoutBody H.status416
+    | null x            -> WithoutBody H.requestedRangeNotSatisfiable416
     | Just r  <- head x ->  let 
                               beg /\ end = checkRange r size
                               len = end - beg + 1
                               s = 
                                 if beg == 0 && end == size - 1 
-                                then H.status200 
-                                else H.status206
+                                then H.ok200
+                                else H.partialContent206
                               in WithBody s [] beg len
     | otherwise         -> WithoutBody H.status500
 

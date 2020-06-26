@@ -35,10 +35,10 @@ condReqHeader reqH = do
   where 
     hrd = Map.fromFoldable reqH 
     parseDatetime = map (flip bind JSDate.toDateTime)
-    ifModifiedSince = parseDatetime $ traverse  JSDate.parse $ Map.lookup (String.toLower H.hIfModifiedSince) hrd 
-    ifUnmodifiedSince = parseDatetime $ traverse JSDate.parse $ Map.lookup (String.toLower H.hIfUnmodifiedSince) hrd 
-    ifRange = parseDatetime $ traverse JSDate.parse $ Map.lookup (String.toLower H.hIfRange) hrd 
-    range = Map.lookup (String.toLower H.hRange) hrd
+    ifModifiedSince = parseDatetime $ traverse  JSDate.parse $ Map.lookup H.hIfModifiedSince hrd 
+    ifUnmodifiedSince = parseDatetime $ traverse JSDate.parse $ Map.lookup H.hIfUnmodifiedSince hrd 
+    ifRange = parseDatetime $ traverse JSDate.parse $ Map.lookup H.hIfRange hrd 
+    range = Map.lookup H.hRange hrd
 
 condResHeader :: H.RequestHeaders -> Effect ResponseHeaderCond
 condResHeader reqH = do 
@@ -49,6 +49,6 @@ condResHeader reqH = do
   where 
     hrd = Map.fromFoldable reqH 
     parseDatetime = map (flip bind JSDate.toDateTime)
-    contentLength =  Int.fromString =<< Map.lookup (String.toLower H.hContentLength) hrd 
-    lastModified = parseDatetime $ traverse JSDate.parse $ Map.lookup (String.toLower H.hLastModified) hrd 
-    date = parseDatetime $ traverse JSDate.parse $ Map.lookup (String.toLower H.hDate) hrd 
+    contentLength =  Int.fromString =<< Map.lookup H.hContentLength hrd 
+    lastModified = parseDatetime $ traverse JSDate.parse $ Map.lookup H.hLastModified hrd 
+    date = parseDatetime $ traverse JSDate.parse $ Map.lookup H.hDate hrd 
