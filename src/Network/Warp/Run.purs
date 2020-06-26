@@ -4,11 +4,10 @@ module Network.Warp.Run
     ) 
     where
 
-import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
-
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (attempt, launchAff_)
 import Effect.Class (liftEffect)
 import Network.Wai (headers)
 import Network.Wai.Http (Application, HttpRequest(..))
@@ -21,6 +20,7 @@ import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
 import Node.Net.Socket (Socket)
 import Node.Stream as Stream
+import Prelude (Unit, bind, discard, pure, unit, void, ($), (<<<))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- -- -- | Run an 'Application' on the given port.
@@ -49,14 +49,22 @@ runSettings settings app = do
         liftEffect $ Stream.onError resStream \err -> launchAff_ do 
             sendResponse settings requestHeaders res $ settings.onExceptionResponse err
 
-        app req' (sendResponse settings requestHeaders res)
+        result <- attempt $ app req' (sendResponse settings requestHeaders res)
+
+        case result of 
+            Left e -> sendResponse settings requestHeaders res $ settings.onExceptionResponse e
+            _      -> pure unit
 
     onUpgrade server \req socket _ -> do 
         let req' = (HttpRequest req)    
             requestHeaders = headers req'
             httpres = unsafeCoerce socket -- Passing the socket as HTTP.Response to `sendResponse`
 
-        launchAff_ do app req' (sendResponse settings requestHeaders httpres)
+        launchAff_ do 
+            result <- attempt $ app req' (sendResponse settings requestHeaders httpres)
+            case result of 
+                Left e -> sendResponse settings requestHeaders httpres $ settings.onExceptionResponse e
+                _      -> pure unit
 
     -- Handles response error
     Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe HttpRequest))

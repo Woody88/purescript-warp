@@ -6,11 +6,10 @@ import Data.Either (Either(..), fromLeft)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
-import Effect.Aff (Aff, Milliseconds(..), bracket, delay, error, launchAff_, makeAff, nonCanceler)
+import Effect.Aff (Aff, Milliseconds(..), bracket, delay, error, launchAff_, makeAff, nonCanceler, throwError)
 import Effect.Aff.AVar as Avar
 import Effect.Class (liftEffect)
-import Effect.Class.Console as Console
-import Network.HTTP.Types (hContentType, status200)
+import Network.HTTP.Types (hContentType, status200, status500)
 import Network.Wai (responseStr)
 import Network.Wai.Http (Application)
 import Network.Warp (Settings, defaultSettings, runSettings)
@@ -31,7 +30,7 @@ type ResponseBody = String
 getServerPort :: HTTP.Server -> Aff Net.Address
 getServerPort httpserver = do 
   let netserver = unsafeCoerce httpserver
-  delay $ Milliseconds 300.00  -- without this delay the os will not have the time to assign a port.
+  delay $ Milliseconds 200.00  -- without this delay the os will not have the time to assign a port.
   makeAff \done -> do 
     maddr <- Net.address netserver
     case maddr of 
@@ -55,7 +54,7 @@ withStubbedApi settings app action =
 simpleReq :: String -> Aff (Client.Response /\ Maybe ResponseBody)
 simpleReq uri = do
   bodyBus <- Avar.empty
-  Console.log ("GET " <> uri <> ":")
+  -- Console.log ("GET " <> uri <> ":")
   res <- makeAff \done -> do 
     req <- Client.requestFromURI uri (done <<< Right)
     Stream.end (Client.requestAsStream req) (pure unit)
@@ -70,15 +69,29 @@ simpleReq uri = do
 helloWorldApp :: Application
 helloWorldApp req send = send $ responseStr status200 [(hContentType /\ "text/plain")] "Hello, World!"
 
+helloWorldThrowApp :: Application
+helloWorldThrowApp req send = do 
+  throwError $ error "myerror"
+
 spec :: Spec Unit
 spec = do 
   let settings = defaultSettings { port = 0 } -- Console.log "Server listening..." }
   around (withStubbedApi settings helloWorldApp) do
-    describe "api client" do
+    describe "helloWorldApp" do
       it "should return status code 200" $ \port -> do
         response /\ _ <- simpleReq ("http://localhost:" <> show port)
         (pure $ Client.statusCode response) `shouldReturn` status200.code
 
       it "should return 'Hello, World!'" $ \port -> do
         _ /\ message  <- simpleReq ("http://localhost:" <> show port)
-        (pure message) `shouldReturn` Just "Hello, World!"
+        (pure message) `shouldReturn` (Just "Hello, World!")
+
+  around (withStubbedApi settings helloWorldThrowApp) do
+    describe "helloWorldThrowApp" do
+      it "should return status code 500" $ \port -> do
+        response /\ _ <- simpleReq ("http://localhost:" <> show port)
+        (pure $ Client.statusCode response) `shouldReturn` status500.code
+
+      it "should return status 500 message, 'Something went wrong!'" $ \port -> do
+        _ /\ message  <- simpleReq ("http://localhost:" <> show port)
+        (pure message) `shouldReturn` (Just status500.message)
