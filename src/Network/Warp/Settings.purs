@@ -2,7 +2,7 @@ module Network.Warp.Settings where
 
 import Data.Maybe (Maybe)
 import Data.Tuple.Nested ((/\))
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, Milliseconds(..))
 import Effect.Class.Console as Console
 import Effect.Exception (Error)
 import Effect.Exception as Error
@@ -17,6 +17,7 @@ type Settings
       , onException :: forall req. WaiRequest req => Maybe req -> Error -> Aff Unit 
       , onExceptionResponse :: Error -> Response
       , serverName :: String
+      , timeout :: Milliseconds
       }
 
 defaultSettings :: Settings 
@@ -26,6 +27,7 @@ defaultSettings = { port: 3000
                   , onException: defaultOnException
                   , onExceptionResponse: defaultOnExceptionResponse
                   , serverName: "Warp/0.0.1"
+                  , timeout: Milliseconds 0.00
                   }
 
 defaultOnException :: forall req. WaiRequest req => Maybe req -> Error -> Aff Unit 

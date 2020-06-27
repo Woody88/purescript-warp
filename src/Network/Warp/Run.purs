@@ -11,14 +11,13 @@ import Effect.Aff (attempt, launchAff_)
 import Effect.Class (liftEffect)
 import Network.Wai (headers)
 import Network.Wai.Http (Application, HttpRequest(..))
+import Network.Warp.FFI.Server (createServer, onRequest, onUpgrade)
 import Network.Warp.FFI.Server (fromHttpServer) as Server
 import Network.Warp.Response (sendResponse)
 import Network.Warp.Settings (Settings, defaultSettings)
-import Node.Buffer (Buffer)
 import Node.HTTP (Server)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
-import Node.Net.Socket (Socket)
 import Node.Stream as Stream
 import Prelude (Unit, bind, discard, pure, unit, void, ($), (<<<))
 import Unsafe.Coerce (unsafeCoerce)
@@ -34,7 +33,8 @@ runSettings ::  Settings -> Application -> Effect Server
 runSettings settings app = do 
     let options = { port: settings.port, hostname: settings.host, backlog: Nothing }
 
-    server <- createServer 
+    server <- createServer { timeout: settings.timeout }
+    
 
     onRequest server \req res -> launchAff_ do 
         let req' = (HttpRequest req)    
@@ -71,8 +71,4 @@ runSettings settings app = do
    
     HTTP.listen server options (launchAff_ settings.beforeMainLoop)
     
-    pure server 
-
-foreign import createServer :: Effect HTTP.Server 
-foreign import onRequest  :: HTTP.Server -> (HTTP.Request -> HTTP.Response -> Effect Unit) -> Effect Unit
-foreign import onUpgrade :: HTTP.Server -> (HTTP.Request -> Socket -> Buffer -> Effect Unit) -> Effect Unit 
+    pure server
