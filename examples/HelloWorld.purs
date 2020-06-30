@@ -17,7 +17,7 @@ main = do
     let beforeMainLoop = do 
             Console.log $ "Listening "
         
-    void $ runSettings defaultSettings { port = 0, beforeMainLoop = beforeMainLoop } app 
+    void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
 app :: Application 
 app req f = do
