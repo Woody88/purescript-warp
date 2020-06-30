@@ -5,7 +5,7 @@ import Prelude
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
 import Effect.Class.Console as Console
-import Network.HTTP.Types (status200)
+import Network.HTTP.Types (ok200, status200)
 import Network.HTTP.Types.Header (hContentType)
 import Network.Wai (responseStr)
 import Network.Wai.Http (Application)
@@ -21,5 +21,5 @@ main = do
 
 app :: Application 
 app req f = do
-    f $ responseStr status200 [(hContentType /\ "text/plain")] "Hello World!"
+    f $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello World!"
 
