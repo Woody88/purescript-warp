@@ -8,6 +8,7 @@ import Data.Foldable (traverse_)
 import Data.Newtype (unwrap)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
+import Data.Maybe (Maybe)
 import Effect (Effect)
 import Effect.Aff (Aff, error, try)
 import Effect.Class (liftEffect)
@@ -20,6 +21,7 @@ import Network.Warp.File (RspFileInfo(..), conditionalRequest)
 import Network.Warp.FileInfo (mkFileInfo)
 import Network.Warp.Header (condReqHeader, condResHeader)
 import Network.Warp.Settings (Settings)
+import Node.Buffer (Buffer)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSAff
 import Node.HTTP as HTTP
@@ -27,8 +29,8 @@ import Node.Stream as Stream
 import Partial.Unsafe (unsafeCrashWith)
 import Unsafe.Coerce (unsafeCoerce)
 
-sendResponse :: Settings -> H.RequestHeaders -> HTTP.Response -> Response -> Aff Unit
-sendResponse settings _ reply (ResponseString status headers data_) = do 
+sendResponse :: Settings -> Maybe Buffer -> H.RequestHeaders -> HTTP.Response -> Response -> Aff Unit
+sendResponse settings _ _ reply (ResponseString status headers data_) = do 
   let stream = HTTP.responseAsStream reply
 
   liftEffect do 
@@ -40,7 +42,7 @@ sendResponse settings _ reply (ResponseString status headers data_) = do
     
     void $ Stream.end stream mempty
  
-sendResponse settings _ reply (ResponseStream status headers respstream) = do 
+sendResponse settings _ _ reply (ResponseStream status headers respstream) = do 
   let stream = HTTP.responseAsStream reply
   liftEffect do 
     _ <- traverse_ (setHeader $ HTTP.setHeader reply) $ addServerName settings.serverName headers
@@ -50,11 +52,11 @@ sendResponse settings _ reply (ResponseStream status headers respstream) = do
     Stream.onEnd respstream $ pure unit 
     
 -- TODO: need to find a better approach than unsafeCoerce
-sendResponse settings _ reply (ResponseSocket cb) = do 
-  cb (unsafeCoerce reply)
+sendResponse settings rawHeader _ reply (ResponseSocket cb) = do 
+  cb (unsafeCoerce reply) rawHeader
 
-sendResponse settings reqHead reply (ResponseFile status headers path fpart) = do
-    let sendFile404 = sendResponse settings reqHead reply sendResponseFile404
+sendResponse settings rawH reqHead reply (ResponseFile status headers path fpart) = do
+    let sendFile404 = sendResponse settings rawH reqHead reply sendResponseFile404
         stream = HTTP.responseAsStream reply
         eFileInfo = note (error "Could not generate fileInfo") <<< mkFileInfo path
 
@@ -79,7 +81,7 @@ sendResponse settings reqHead reply (ResponseFile status headers path fpart) = d
               _         <- Stream.pipe filestream stream
               Stream.onEnd filestream $ pure unit
 
-sendResponse settings reqHead reply (ResponseRaw bufferCallback response) =
+sendResponse settings _ reqHead reply (ResponseRaw bufferCallback response) =
   unsafeCrashWith "Not yet implemented"
 
 addContentLength :: Int -> ResponseHeaders -> ResponseHeaders

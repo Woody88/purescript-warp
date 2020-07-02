@@ -47,23 +47,23 @@ runSettings settings app = do
 
         -- Handles response error
         liftEffect $ Stream.onError resStream \err -> launchAff_ do 
-            sendResponse settings requestHeaders res $ settings.onExceptionResponse err
+            sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse err
 
-        result <- attempt $ app req' (sendResponse settings requestHeaders res)
+        result <- attempt $ app req' (sendResponse settings Nothing requestHeaders res)
 
         case result of 
-            Left e -> sendResponse settings requestHeaders res $ settings.onExceptionResponse e
+            Left e -> sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
             _      -> pure unit
 
-    onUpgrade server \req socket _ -> do 
+    onUpgrade server \req socket rawH -> do 
         let req' = (HttpRequest req)    
             requestHeaders = headers req'
             httpres = unsafeCoerce socket -- Passing the socket as HTTP.Response to `sendResponse`
 
         launchAff_ do 
-            result <- attempt $ app req' (sendResponse settings requestHeaders httpres)
+            result <- attempt $ app req' (sendResponse settings (Just rawH) requestHeaders httpres)
             case result of 
-                Left e -> sendResponse settings requestHeaders httpres $ settings.onExceptionResponse e
+                Left e -> sendResponse settings Nothing requestHeaders httpres $ settings.onExceptionResponse e
                 _      -> pure unit
 
     -- Handles response error
