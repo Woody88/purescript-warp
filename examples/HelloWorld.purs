@@ -14,12 +14,9 @@ import Network.Warp.Settings (defaultSettings)
 
 main :: Effect Unit
 main = do 
-    let beforeMainLoop = do 
-            Console.log $ "Listening "
-        
+    let beforeMainLoop = Console.log $ "Listening on port " <> show defaultSettings.port
     void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
 app :: Application 
 app req f = do
     f $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello World!"
-
