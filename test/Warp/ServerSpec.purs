@@ -10,8 +10,7 @@ import Effect.Aff (Aff, Milliseconds(..), bracket, delay, error, launchAff_, mak
 import Effect.Aff.AVar as Avar
 import Effect.Class (liftEffect)
 import Network.HTTP.Types (hContentType, status200, status500)
-import Network.Wai (responseStr)
-import Network.Wai.Http (Application)
+import Network.Wai (Application, responseStr)
 import Network.Warp (Settings, defaultSettings, runSettings)
 import Node.Encoding (Encoding(..))
 import Node.HTTP (Server)
@@ -40,7 +39,7 @@ getServerPort httpserver = do
 
 
 serveStubbedApi :: Settings -> Application -> Aff HTTP.Server
-serveStubbedApi settings = liftEffect <<< runSettings settings
+serveStubbedApi settings app = liftEffect $ runSettings settings app 
 
 stopServer :: Server -> Aff Unit
 stopServer = liftEffect <<< flip HTTP.close (pure unit)-- (Console.log "Server closed.")
