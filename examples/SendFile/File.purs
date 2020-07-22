@@ -9,8 +9,7 @@ import Effect (Effect)
 import Effect.Class.Console as Console
 import Network.HTTP.Types (status200)
 import Network.HTTP.Types.Header (hContentType)
-import Network.Wai (responseFile)
-import Network.Wai.Http (Application)
+import Network.Wai (Application, responseFile)
 import Network.Warp.Run (run)
 
 main :: Effect Unit

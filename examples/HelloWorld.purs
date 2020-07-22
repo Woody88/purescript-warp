@@ -7,8 +7,7 @@ import Effect (Effect)
 import Effect.Class.Console as Console
 import Network.HTTP.Types (ok200)
 import Network.HTTP.Types.Header (hContentType)
-import Network.Wai (responseStr)
-import Network.Wai.Http (Application)
+import Network.Wai (Application, responseStr)
 import Network.Warp.Run (runSettings)
 import Network.Warp.Settings (defaultSettings)
 
