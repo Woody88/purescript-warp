@@ -4,23 +4,20 @@ module Network.Warp.Run
     ) 
     where
 
-import Data.Either (Either(..))
+import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
+
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Aff (attempt, launchAff_)
-import Effect.Class (liftEffect)
-import Network.Wai (Application, headers)
-import Network.Warp.FFI.Server (createServer, onRequest, onUpgrade)
+import Effect.Aff (launchAff_)
+import Network.Wai (Application)
+import Network.Warp.FFI.Server (createServer)
 import Network.Warp.FFI.Server (fromHttpServer) as Server
-import Network.Warp.Http (HttpRequest(..))
-import Network.Warp.Response (sendResponse)
+import Network.Warp.Http (HttpRequest)
+import Network.Warp.Server (onRequest, onUpgrade) as Server 
 import Network.Warp.Settings (Settings, defaultSettings)
 import Node.HTTP (Server)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
-import Node.Stream as Stream
-import Prelude (Unit, bind, discard, pure, unit, void, ($), (<<<))
-import Unsafe.Coerce (unsafeCoerce)
 
 -- -- -- | Run an 'Application' on the given port.
 -- -- -- | This calls 'runSettings' with 'defaultSettings'.
@@ -35,36 +32,9 @@ runSettings settings app = do
 
     server <- createServer { timeout: settings.timeout }
     
-
-    onRequest server \req res -> launchAff_ do 
-        let req' = (HttpRequest req)    
-            requestHeaders = headers req'
-            reqStream = HTTP.requestAsStream req 
-            resStream = HTTP.responseAsStream res
-
-        -- Handles request error
-        liftEffect $ Stream.onError reqStream (launchAff_ <<< settings.onException (Just req'))
-
-        -- Handles response error
-        liftEffect $ Stream.onError resStream \err -> launchAff_ do 
-            sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse err
-
-        result <- attempt $ app req' (sendResponse settings Nothing requestHeaders res)
-
-        case result of 
-            Left e -> sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
-            _      -> pure unit
-
-    onUpgrade server \req socket rawH -> do 
-        let req' = (HttpRequest req)    
-            requestHeaders = headers req'
-            httpres = unsafeCoerce socket -- Passing the socket as HTTP.Response to `sendResponse`
-
-        launchAff_ do 
-            result <- attempt $ app req' (sendResponse settings (Just rawH) requestHeaders httpres)
-            case result of 
-                Left e -> sendResponse settings Nothing requestHeaders httpres $ settings.onExceptionResponse e
-                _      -> pure unit
+    Server.onRequest server app settings     
+    
+    Server.onUpgrade server app settings 
 
     -- Handles response error
     Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe HttpRequest))
