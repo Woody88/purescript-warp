@@ -7,14 +7,14 @@ import Effect.Class.Console as Console
 import Effect.Exception (Error)
 import Effect.Exception as Error
 import Network.HTTP.Types (hContentType, status500) as H
-import Network.Wai (class WaiRequest, Response, responseStr)
+import Network.Wai (Request, Response, responseStr)
 import Prelude (Unit, pure, unit, ($))
 
 type Settings 
     = { port :: Int
       , host :: String 
       , beforeMainLoop :: Aff Unit
-      , onException :: forall req. WaiRequest req => Maybe req -> Error -> Aff Unit 
+      , onException :: Maybe Request -> Error -> Aff Unit 
       , onExceptionResponse :: Error -> Response
       , serverName :: String
       , timeout :: Milliseconds
@@ -30,7 +30,7 @@ defaultSettings = { port: 3000
                   , timeout: Milliseconds 0.00
                   }
 
-defaultOnException :: forall req. WaiRequest req => Maybe req -> Error -> Aff Unit 
+defaultOnException :: Maybe Request -> Error -> Aff Unit 
 defaultOnException _ e = Console.log $ Error.message e 
 
 defaultOnExceptionResponse :: Error -> Response 

@@ -4,20 +4,18 @@ module Network.Warp.Run
     ) 
     where
 
-import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
-
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Network.Wai (Application)
+import Network.Wai (Application, Request)
 import Network.Warp.FFI.Server (createServer)
 import Network.Warp.FFI.Server (fromHttpServer) as Server
-import Network.Warp.Http (HttpRequest)
-import Network.Warp.Server (onRequest, onUpgrade) as Server 
+import Network.Warp.Server (onRequest, onUpgrade) as Server
 import Network.Warp.Settings (Settings, defaultSettings)
 import Node.HTTP (Server)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
+import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
 
 -- -- -- | Run an 'Application' on the given port.
 -- -- -- | This calls 'runSettings' with 'defaultSettings'.
@@ -37,7 +35,7 @@ runSettings settings app = do
     Server.onUpgrade server app settings 
 
     -- Handles response error
-    Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe HttpRequest))
+    Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe Request))
    
     HTTP.listen server options (launchAff_ settings.beforeMainLoop)
     

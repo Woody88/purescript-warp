@@ -4,13 +4,13 @@ import Prelude
 
 import Data.Array as Array
 import Data.Maybe (fromMaybe)
+import Data.Newtype (unwrap)
 import Data.String (Pattern(..))
 import Data.String as String
-import Network.Wai (class WaiRequest)
-import Network.Wai as Wai
+import Network.Wai (Request)
 
-pathInfo :: forall req. WaiRequest req => req -> Array String 
-pathInfo = Wai.url >>> pathInfo'
+pathInfo :: Request -> Array String 
+pathInfo = unwrap >>> _.url >>> pathInfo'
 
 pathInfo' :: String -> Array String 
 pathInfo' = split "?" >>> first >>> split "/" >>> nonempty 
