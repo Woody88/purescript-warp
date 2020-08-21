@@ -14,7 +14,7 @@ import Effect (Effect)
 import Foreign (unsafeToForeign)
 import Foreign.Object as Object
 import Network.HTTP.Types (http09, http10, http11)
-import Network.HTTP.Types as Method
+import Network.HTTP.Types as H
 import Network.Wai (Request(..), RequestBodyLength(..))
 import Node.HTTP as HTTP
 import Node.Net.Socket as Socket
@@ -40,7 +40,8 @@ toWaiRequest httpreq = do
     }
   where
     url         = HTTP.requestURL httpreq
-    method      = Method.fromString $ HTTP.requestMethod httpreq
+    -- | Returns GET if cant parse Method
+    method      = fromMaybe H.GET $ H.parseMethod $ HTTP.requestMethod httpreq  
     reqHandle   = pure $ unsafeToForeign httpreq
     headers     = httpHeaders httpreq
     body        = Just $ HTTP.requestAsStream httpreq

@@ -7,7 +7,6 @@ import Data.Int as Int
 import Data.JSDate as JSDate
 import Data.Map as Map
 import Data.Maybe (Maybe)
-import Data.String as String
 import Data.Traversable (traverse)
 import Effect (Effect)
 import Network.HTTP.Types as H
