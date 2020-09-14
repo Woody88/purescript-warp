@@ -19,5 +19,5 @@ main = do
     run port app 
 
 app :: Application
-app req f =
-    f $ responseFile status200 [(hContentType /\ "text/html")] "myfile.html" Nothing
+app req send =
+    send $ responseFile status200 [(hContentType /\ "text/html")] "myfile.html" Nothing

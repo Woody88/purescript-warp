@@ -17,5 +17,5 @@ main = do
     void $ runSettings defaultSettings { beforeMainLoop = beforeMainLoop } app 
 
 app :: Application 
-app req f = do
-    f $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello World!"
+app req send = do
+    send $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello World!"
