@@ -25,6 +25,8 @@ toWaiRequest httpreq = do
   remoteHost <- getRemoteHost
   pure $ Request 
     { url
+    , pathInfo
+    , queryString
     , method
     , httpVersion
     , headers
@@ -40,6 +42,8 @@ toWaiRequest httpreq = do
     }
   where
     url         = HTTP.requestURL httpreq
+    pathInfo    = H.parsePath url 
+    queryString = H.parseQuery url 
     -- | Returns GET if cant parse Method
     method      = fromMaybe H.GET $ H.parseMethod $ HTTP.requestMethod httpreq  
     reqHandle   = pure $ unsafeToForeign httpreq
