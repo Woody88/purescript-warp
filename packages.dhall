@@ -119,9 +119,19 @@ let additions =
 
 
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.5-20191215/packages.dhall sha256:fdc5d54cd54213000100fbc13c90dce01668a73fe528d8662430558df3411bee
+      https://raw.githubusercontent.com/purescript/package-sets/ps-0.14/src/packages.dhall sha256:462b0c3503e621142518935bf779555eef593317785f74bd5607bd7ebddf6036
 
-let overrides  = {=}
+let overrides =   
+    { metadata = upstream.metadata // { version = "v0.14.0-rc4" }
+    , prelude =
+        upstream.prelude // { version = "070b6eb" }
+    , record =
+        upstream.record // { version = "ps-0.14" }
+    , type-equality =
+      upstream.type-equality // { version = "master" }
+    , typelevel-prelude =
+        upstream.typelevel-prelude // { version = "master" }
+    }
 
 let additions =
     { wai =
