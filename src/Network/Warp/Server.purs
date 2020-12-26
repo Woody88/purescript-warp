@@ -27,7 +27,7 @@ onRequest server app settings = FFI.onRequest server \req res -> launchAff_ do
         resStream = HTTP.responseAsStream res
 
     -- Handles request error
-    liftEffect $ Stream.onError reqStream (launchAff_ <<< settings.onException (Just waiReq))
+    liftEffect $ Stream.onError reqStream (settings.onException (Just waiReq))
 
     -- Handles response error
     liftEffect $ Stream.onError resStream \err -> launchAff_ do 

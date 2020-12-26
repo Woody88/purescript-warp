@@ -35,8 +35,8 @@ runSettings settings app = do
     Server.onUpgrade server app settings 
 
     -- Handles response error
-    Server.onError (Server.fromHttpServer server) (launchAff_ <<< settings.onException (Nothing :: Maybe Request))
+    Server.onError (Server.fromHttpServer server) (settings.onException (Nothing :: Maybe Request))
    
-    HTTP.listen server options (launchAff_ settings.beforeMainLoop)
+    HTTP.listen server options settings.beforeMainLoop
     
     pure server
