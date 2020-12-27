@@ -140,12 +140,9 @@ let additions =
         }
     , http-types =
         { dependencies =
-            [ "console"
-            , "effect"
-            , "psci-support"
-            , "tuples"
+            [ "tuples"
             , "unicode"
-            , "uri"
+            , "generics-rep"
             ]
         , repo =
             "https://github.com/Woody88/purescript-http-types.git"

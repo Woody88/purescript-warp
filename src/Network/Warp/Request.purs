@@ -2,6 +2,7 @@ module Network.Warp.Request where
 
 import Prelude
 
+import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Data.Bifunctor (lmap)
 import Data.Int as Int
 import Data.Map as Map
@@ -61,10 +62,11 @@ toWaiRequest httpreq = do
                 "1.1"     -> http11
                 otherwise -> http10
     getRemoteHost = remoteHost' $ _.socket $ unsafeCoerce httpreq
-        where 
-            remoteHost' socket = do 
-                let mkHost mhost mport = (\h p -> String.joinWith ":" [h, show p]) <$> mhost <*> mport 
-                mkHost <$> Socket.remoteAddress socket  <*> Socket.remotePort socket 
+
+    remoteHost' socket = runMaybeT do
+      h <- MaybeT $ Socket.remoteAddress socket
+      p <- MaybeT $ Socket.remotePort socket 
+      pure $ h <> ":" <> show p
 
     contentLength = parseContentLength $ Map.lookup (wrap "content-length") $ Map.fromFoldable $ httpHeaders httpreq
       where 

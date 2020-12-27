@@ -11,9 +11,9 @@ You can edit this file as you like.
   , "node-http"
   , "node-net"
   , "node-url"
-  , "psci-support"
+  , "generics-rep"
   , "wai"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 }
