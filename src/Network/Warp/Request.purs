@@ -11,18 +11,21 @@ import Data.Newtype (wrap)
 import Data.String as String
 import Data.String.CaseInsensitive (CaseInsensitiveString)
 import Data.Tuple (Tuple)
+import Data.Tuple.Nested ((/\))
+import Data.Vault as V
 import Effect (Effect)
 import Foreign (unsafeToForeign)
 import Foreign.Object as Object
 import Network.HTTP.Types (http09, http10, http11)
 import Network.HTTP.Types as H
 import Network.Wai (Request(..), RequestBodyLength(..))
+import Network.Warp.FFI.Server (HttpHandles)
 import Node.HTTP as HTTP
 import Node.Net.Socket as Socket
 import Unsafe.Coerce (unsafeCoerce)
 
-toWaiRequest :: HTTP.Request -> Effect Request
-toWaiRequest httpreq = do 
+toWaiRequest :: Maybe (V.Key HttpHandles) -> HTTP.Request -> Maybe HTTP.Response -> Effect Request
+toWaiRequest mkey httpreq mhttpres = do 
   remoteHost <- getRemoteHost
   pure $ Request 
     { url
@@ -39,7 +42,7 @@ toWaiRequest httpreq = do
     , remoteHost
     , range
     , isSecure
-    , reqHandle
+    , vault
     }
   where
     url         = HTTP.requestURL httpreq
@@ -47,7 +50,6 @@ toWaiRequest httpreq = do
     queryString = H.parseQuery url 
     -- | Returns GET if cant parse Method
     method      = fromMaybe H.GET $ H.parseMethod $ HTTP.requestMethod httpreq  
-    reqHandle   = pure $ unsafeToForeign httpreq
     headers     = httpHeaders httpreq
     body        = Just $ HTTP.requestAsStream httpreq
     host        = Map.lookup (wrap "host") $ Map.fromFoldable $ httpHeaders httpreq 
@@ -55,6 +57,12 @@ toWaiRequest httpreq = do
     range       = Map.lookup (wrap "range") $ Map.fromFoldable $ httpHeaders httpreq
     userAgent   = Map.lookup (wrap "user-agent") $ Map.fromFoldable $ httpHeaders httpreq
     isSecure    = false
+
+    vault 
+      | Just key     <- mkey 
+      , Just httpres <- mhttpres = V.insert key (httpreq /\ httpres) V.empty
+      | otherwise                = V.empty
+
     httpVersion = parseHttpVersion $ HTTP.httpVersion httpreq
         where 
             parseHttpVersion = case _ of 
