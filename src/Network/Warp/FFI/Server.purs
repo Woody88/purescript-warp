@@ -2,19 +2,15 @@ module Network.Warp.FFI.Server where
 
 import Prelude
 
-import Data.Either (Either(..))
-import Effect.Uncurried (EffectFn3, runEffectFn3)
-import Data.Maybe (Maybe(..))
+import Data.Either (either)
 import Data.Tuple (Tuple)
-import Data.Tuple.Nested ((/\))
-import Data.Vault (Key, lookup, newKey) as V
+import Data.Vault (Key, newKey) as V
 import Effect (Effect)
-import Effect.Aff (Milliseconds, launchAff_, makeAff, nonCanceler, runAff_, try)
-import Effect.Aff as Error
+import Effect.Aff (Milliseconds, runAff_, throwError)
 import Effect.Class (liftEffect)
-import Effect.Class.Console as Console
-import Network.HTTP.Types as H
-import Network.Wai (Application, Middleware, Request(..), responseStr)
+import Effect.Uncurried (EffectFn3, runEffectFn3)
+import Network.Wai (Middleware)
+import Network.Warp.Request (withNodeRequest, withNodeResponse)
 import Node.Buffer (Buffer)
 import Node.HTTP as HTTP
 import Node.Net.Server as Net
@@ -24,20 +20,16 @@ type Options = { timeout :: Milliseconds }
 
 type HttpHandles = Tuple HTTP.Request HTTP.Response 
 
-type ForeignApplication = EffectFn3 HTTP.Request HTTP.Response (Effect Unit) Unit
+type ForeignMiddleware = EffectFn3 HTTP.Request HTTP.Response (Effect Unit) Unit
 
 httpHandlesKey :: Effect (V.Key HttpHandles)
 httpHandlesKey = V.newKey
 
-mkMiddlewareFromForeign :: V.Key HttpHandles -> ForeignApplication -> Middleware 
-mkMiddlewareFromForeign key foreignApp app req'@(Request req) send = case V.lookup key req.vault of 
-  Nothing -> 
-    app req' \res ->  
-      send $ responseStr H.internalServerError500 [] "Http handle coult not be found with your key."
-  Just (httpreq /\ httpres) ->  
-    makeAff \cb -> do 
-      runEffectFn3 foreignApp httpreq httpres (runAff_ cb $ app req' send) 
-      pure nonCanceler
+mkMiddlewareFromForeign :: ForeignMiddleware -> Middleware
+mkMiddlewareFromForeign middleware app req send =  liftEffect do
+  withNodeRequest req \nodeReq ->
+    withNodeResponse req \nodeRes ->
+      runEffectFn3 middleware nodeReq nodeRes (runAff_ (either throwError pure) (app req send))
        
 foreign import fromHttpServer :: HTTP.Server -> Net.Server 
 foreign import createServer :: Options -> Effect HTTP.Server 

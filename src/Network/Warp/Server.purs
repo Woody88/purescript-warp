@@ -20,7 +20,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 onRequest :: Server -> Application -> Settings -> Effect Unit 
 onRequest server app settings = FFI.onRequest server \req res -> launchAff_ do 
-    waiReq <- liftEffect $ toWaiRequest settings.httpKey req (Just res)
+    waiReq <- liftEffect $ toWaiRequest req res
 
     let requestHeaders = _.headers $ unwrap waiReq 
         reqStream = HTTP.requestAsStream req 
@@ -41,10 +41,11 @@ onRequest server app settings = FFI.onRequest server \req res -> launchAff_ do
 
 onUpgrade :: Server -> Application -> Settings -> Effect Unit
 onUpgrade server app settings = FFI.onUpgrade server \req socket rawH -> do 
-    waiReq <- toWaiRequest settings.httpKey req Nothing
+    let httpres = unsafeCoerce socket :: HTTP.Response -- Passing the socket as HTTP.Response to `sendResponse`
+
+    waiReq <- toWaiRequest req httpres
 
     let requestHeaders = _.headers $ unwrap waiReq
-        httpres = unsafeCoerce socket -- Passing the socket as HTTP.Response to `sendResponse`
 
     launchAff_ do 
         result <- attempt $ app waiReq (sendResponse settings (Just rawH) requestHeaders httpres)
