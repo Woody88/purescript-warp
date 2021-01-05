@@ -3,8 +3,6 @@ module Network.Warp.FFI.Server where
 import Prelude
 
 import Data.Either (either)
-import Data.Tuple (Tuple)
-import Data.Vault (Key, newKey) as V
 import Effect (Effect)
 import Effect.Aff (Milliseconds, runAff_, throwError)
 import Effect.Class (liftEffect)
@@ -18,12 +16,7 @@ import Node.Net.Socket (Socket)
 
 type Options = { timeout :: Milliseconds }
 
-type HttpHandles = Tuple HTTP.Request HTTP.Response 
-
 type ForeignMiddleware = EffectFn3 HTTP.Request HTTP.Response (Effect Unit) Unit
-
-httpHandlesKey :: Effect (V.Key HttpHandles)
-httpHandlesKey = V.newKey
 
 mkMiddlewareFromForeign :: ForeignMiddleware -> Middleware
 mkMiddlewareFromForeign middleware app req send = liftEffect do

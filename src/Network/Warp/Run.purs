@@ -10,7 +10,7 @@ import Data.Vault as V
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Network.Wai (Application, Request)
-import Network.Warp.FFI.Server (HttpHandles, createServer, httpHandlesKey)
+import Network.Warp.FFI.Server (createServer)
 import Network.Warp.FFI.Server (fromHttpServer) as Server
 import Network.Warp.Server (onRequest, onUpgrade) as Server
 import Network.Warp.Settings (Settings, defaultSettings)
