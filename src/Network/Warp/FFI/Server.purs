@@ -26,7 +26,7 @@ httpHandlesKey :: Effect (V.Key HttpHandles)
 httpHandlesKey = V.newKey
 
 mkMiddlewareFromForeign :: ForeignMiddleware -> Middleware
-mkMiddlewareFromForeign middleware app req send =  liftEffect do
+mkMiddlewareFromForeign middleware app req send = liftEffect do
   withNodeRequest req \nodeReq ->
     withNodeResponse req \nodeRes ->
       runEffectFn3 middleware nodeReq nodeRes (runAff_ (either throwError pure) (app req send))
