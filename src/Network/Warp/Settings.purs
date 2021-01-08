@@ -1,8 +1,9 @@
 module Network.Warp.Settings where 
 
+import Effect
+
 import Data.Maybe (Maybe)
 import Data.Tuple.Nested ((/\))
-import Effect 
 import Effect.Aff (Milliseconds(..))
 import Effect.Class.Console as Console
 import Effect.Exception (Error)

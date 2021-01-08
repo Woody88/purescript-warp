@@ -8,11 +8,11 @@ import Data.Int as Int
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (wrap)
-import Data.String as String
 import Data.String.CaseInsensitive (CaseInsensitiveString)
 import Data.Tuple (Tuple)
+import Data.Vault as V
 import Effect (Effect)
-import Foreign (unsafeToForeign)
+import Effect.Unsafe (unsafePerformEffect)
 import Foreign.Object as Object
 import Network.HTTP.Types (http09, http10, http11)
 import Network.HTTP.Types as H
@@ -21,8 +21,8 @@ import Node.HTTP as HTTP
 import Node.Net.Socket as Socket
 import Unsafe.Coerce (unsafeCoerce)
 
-toWaiRequest :: HTTP.Request -> Effect Request
-toWaiRequest httpreq = do 
+toWaiRequest :: HTTP.Request -> HTTP.Response -> Effect Request
+toWaiRequest httpreq httpres = do 
   remoteHost <- getRemoteHost
   pure $ Request 
     { url
@@ -39,7 +39,7 @@ toWaiRequest httpreq = do
     , remoteHost
     , range
     , isSecure
-    , reqHandle
+    , vault
     }
   where
     url         = HTTP.requestURL httpreq
@@ -47,7 +47,6 @@ toWaiRequest httpreq = do
     queryString = H.parseQuery url 
     -- | Returns GET if cant parse Method
     method      = fromMaybe H.GET $ H.parseMethod $ HTTP.requestMethod httpreq  
-    reqHandle   = pure $ unsafeToForeign httpreq
     headers     = httpHeaders httpreq
     body        = Just $ HTTP.requestAsStream httpreq
     host        = Map.lookup (wrap "host") $ Map.fromFoldable $ httpHeaders httpreq 
@@ -55,6 +54,12 @@ toWaiRequest httpreq = do
     range       = Map.lookup (wrap "range") $ Map.fromFoldable $ httpHeaders httpreq
     userAgent   = Map.lookup (wrap "user-agent") $ Map.fromFoldable $ httpHeaders httpreq
     isSecure    = false
+
+    vault =
+      V.empty
+        # V.insert nodeRequestKey httpreq
+        # V.insert nodeResponseKey httpres
+
     httpVersion = parseHttpVersion $ HTTP.httpVersion httpreq
         where 
             parseHttpVersion = case _ of 
@@ -75,3 +80,19 @@ toWaiRequest httpreq = do
 
 httpHeaders :: HTTP.Request -> Array (Tuple CaseInsensitiveString String) 
 httpHeaders = map (lmap wrap) <<< Object.toUnfoldable <<< HTTP.requestHeaders
+
+nodeRequestKey :: V.Key HTTP.Request
+nodeRequestKey = unsafePerformEffect V.newKey
+
+withNodeRequest :: forall m. Applicative m => Request -> (HTTP.Request -> m Unit) -> m Unit
+withNodeRequest (Request { vault }) run = case V.lookup nodeRequestKey vault of
+  Just req -> run req
+  Nothing -> pure unit
+
+nodeResponseKey :: V.Key HTTP.Response
+nodeResponseKey = unsafePerformEffect V.newKey
+
+withNodeResponse :: forall m. Applicative m => Request -> (HTTP.Response -> m Unit) -> m Unit
+withNodeResponse (Request { vault }) run = case V.lookup nodeResponseKey vault of
+  Just res -> run res
+  Nothing -> pure unit
