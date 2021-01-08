@@ -34,5 +34,7 @@ jobs:
             output
             
       - run: spago build
-        
+  
+      - run: spago -x spago.test.dhall build 
+      
       - run: spago -x spago.test.dhall test --no-install
