@@ -5,10 +5,7 @@ module Network.Warp.Run
     where
 
 import Data.Maybe (Maybe(..))
-import Data.Tuple.Nested (type (/\), (/\))
-import Data.Vault as V
 import Effect (Effect)
-import Effect.Aff (launchAff_)
 import Network.Wai (Application, Request)
 import Network.Warp.FFI.Server (createServer)
 import Network.Warp.FFI.Server (fromHttpServer) as Server
@@ -17,7 +14,7 @@ import Network.Warp.Settings (Settings, defaultSettings)
 import Node.HTTP (Server)
 import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
-import Prelude (Unit, bind, discard, pure, void, ($), (<<<))
+import Prelude (Unit, bind, discard, pure, void, ($))
 
 -- -- -- | Run an 'Application' on the given port.
 -- -- -- | This calls 'runSettings' with 'defaultSettings'.
