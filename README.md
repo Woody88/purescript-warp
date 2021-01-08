@@ -5,55 +5,45 @@ A server library that wraps node's http library with an API inspired by the hask
 ## Installation
 
 ***This library is not yet published to pursuit.***  
-You can install this package by adding it to your packages.dhall:
+You can install this package by adding the details below to your packages.dhall:
+
+<details>
+  <summary><strong>Using Spago</strong></summary>
 
 ```dhall
 let additions =
-  { warp =
-      { dependencies =
-        [ "node-fs-aff"
-        , "node-net"
-        , "node-url"
-        , "wai"
-        ]
-      , repo =
-          "https://github.com/Woody88/purescript-warp.git"
-      , version =
-          "master"
-      }
-  , wai =
-      { dependencies =
-        [ "http-types"
-        , "node-buffer"
-        , "node-http"
-        , "node-net"
-        , "node-streams"
-        , "node-url"
-        ]
-      , repo =
-          "https://github.com/Woody88/purescript-wai.git"
-      , version =
-          "master"
-      }
-  , http-types =
-      { dependencies =
+      { wai =
+        { dependencies = [ "aff", "effect", "http-types", "node-net", "vault" ]
+        , repo = "https://github.com/Woody88/purescript-wai.git"
+        , version = "vault"
+        }
+      , http-types =
+        { dependencies = [ "tuples", "unicode", "generics-rep" ]
+        , repo = "https://github.com/Woody88/purescript-http-types.git"
+        , version = "master"
+        }
+      , vault =
+        { dependencies =
           [ "console"
           , "effect"
+          , "functions"
+          , "maybe"
+          , "prelude"
           , "psci-support"
-          , "tuples"
-          , "unicode"
-          , "uri"
+          , "refs"
           ]
-      , repo =
-          "https://github.com/Woody88/purescript-http-types.git"
-      , version =
-          "master"
+        , repo = "https://github.com/Woody88/purescript-vault.git"
+        , version = "master"
+        }
       }
-  }
 ```
+
 ```console
 user@user:~$ spago install warp
 ```
+</details>
+
+</br>
 
 ## Usage 
 
