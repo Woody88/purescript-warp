@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Either (either)
 import Effect (Effect)
-import Effect.Aff (Milliseconds, runAff_, throwError)
+import Effect.Aff (Milliseconds, makeAff, nonCanceler, runAff_, throwError)
 import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn3, runEffectFn3)
 import Network.Wai (Middleware)
@@ -17,13 +17,17 @@ import Node.Net.Socket (Socket)
 
 type Options = { timeout :: Milliseconds }
 
+-- | Adapter type for foreign middleware. i.e: express middleware
 type ForeignMiddleware = EffectFn3 HTTP.Request HTTP.Response (Effect Unit) Unit
 
+-- | Create a `Wai.Middleware` from a `ForeignMiddleware`
 mkMiddlewareFromForeign :: ForeignMiddleware -> Middleware
-mkMiddlewareFromForeign middleware app req send = liftEffect do 
-  withNodeRequest req \nodeReq ->
-    withNodeResponse req \nodeRes -> do
-      runEffectFn3 middleware nodeReq nodeRes (runAff_ (either throwError pure) (const unit <$> app req send))
+mkMiddlewareFromForeign middleware app req send = do 
+  makeAff \cb -> do 
+    withNodeRequest req \nodeReq ->
+      withNodeResponse req \nodeRes -> do
+        runEffectFn3 middleware nodeReq nodeRes (runAff_ cb (const unit <$> app req send))
+    pure nonCanceler
   pure ResponseReceived
        
 foreign import fromHttpServer :: HTTP.Server -> Net.Server 
