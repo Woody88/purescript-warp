@@ -36,8 +36,8 @@ onRequest server app settings = FFI.onRequest server \req res -> launchAff_ do
     result <- attempt $ app waiReq (sendResponse settings Nothing requestHeaders res)
 
     case result of 
-        Left e -> sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
-        _      -> pure unit
+        Left e   -> sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
+        Right a  -> pure a
 
 onUpgrade :: Server -> Application -> Settings -> Effect Unit
 onUpgrade server app settings = FFI.onUpgrade server \req socket rawH -> do 
@@ -50,5 +50,5 @@ onUpgrade server app settings = FFI.onUpgrade server \req socket rawH -> do
     launchAff_ do 
         result <- attempt $ app waiReq (sendResponse settings (Just rawH) requestHeaders httpres)
         case result of 
-            Left e -> sendResponse settings Nothing requestHeaders httpres $ settings.onExceptionResponse e
-            _      -> pure unit
+            Left e  -> sendResponse settings Nothing requestHeaders httpres $ settings.onExceptionResponse e
+            Right a -> pure a

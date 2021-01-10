@@ -5,26 +5,13 @@ let overrides = {=}
 
 let additions =
       { wai =
-        { dependencies = [ "aff", "effect", "http-types", "node-net", "vault" ]
+        { dependencies = [ "aff", "effect", "http-types", "node-net" ]
         , repo = "https://github.com/Woody88/purescript-wai.git"
-        , version = "vault"
+        , version = "master"
         }
       , http-types =
         { dependencies = [ "tuples", "unicode", "generics-rep" ]
         , repo = "https://github.com/Woody88/purescript-http-types.git"
-        , version = "master"
-        }
-      , vault =
-        { dependencies =
-          [ "console"
-          , "effect"
-          , "functions"
-          , "maybe"
-          , "prelude"
-          , "psci-support"
-          , "refs"
-          ]
-        , repo = "https://github.com/Woody88/purescript-vault.git"
         , version = "master"
         }
       }

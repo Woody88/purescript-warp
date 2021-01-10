@@ -6,12 +6,14 @@ import Data.Either (Either(..), fromLeft)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
-import Effect.Aff (Aff, Milliseconds(..), bracket, delay, error, launchAff_, makeAff, nonCanceler, throwError)
-import Effect.Aff.AVar as Avar
+import Effect.Aff (Aff, Milliseconds(..), bracket, delay, error, makeAff, nonCanceler, throwError)
 import Effect.Class (liftEffect)
-import Network.HTTP.Types (hContentType, status200, status500)
-import Network.Wai (Application, responseStr)
+import Effect.Ref as Ref
+import Foreign.Object as Object
+import Network.HTTP.Types (hContentType, ok200, status200, status500)
+import Network.Wai (Application, Middleware, Request(..), responseStr)
 import Network.Warp (Settings, defaultSettings, runSettings)
+import Network.Warp.FFI.Server (ForeignMiddleware, mkMiddlewareFromForeign)
 import Node.Encoding (Encoding(..))
 import Node.HTTP (Server)
 import Node.HTTP as HTTP
@@ -20,8 +22,10 @@ import Node.Net.Server as Net
 import Node.Stream as Stream
 import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, around, describe, it)
-import Test.Spec.Assertions (shouldReturn)
+import Test.Spec.Assertions (shouldEqual, shouldReturn)
 import Unsafe.Coerce (unsafeCoerce)
+
+foreign import _testMiddleware :: ForeignMiddleware
 
 type Port = Int 
 type ResponseBody = String 
@@ -44,6 +48,9 @@ serveStubbedApi settings app = liftEffect $ runSettings settings app
 stopServer :: Server -> Aff Unit
 stopServer = liftEffect <<< flip HTTP.close (pure unit)-- (Console.log "Server closed.")
 
+testMiddleware :: Middleware 
+testMiddleware = mkMiddlewareFromForeign _testMiddleware
+
 withStubbedApi :: Settings -> Application -> (Port -> Aff Unit) -> Aff Unit
 withStubbedApi settings app action =
   bracket (serveStubbedApi settings app)
@@ -52,8 +59,7 @@ withStubbedApi settings app action =
 
 simpleReq :: String -> Aff (Client.Response /\ Maybe ResponseBody)
 simpleReq uri = do
-  bodyBus <- Avar.empty
-  -- Console.log ("GET " <> uri <> ":")
+  bodyRef <- liftEffect $ Ref.new mempty
   res <- makeAff \done -> do 
     req <- Client.requestFromURI uri (done <<< Right)
     Stream.end (Client.requestAsStream req) (pure unit)
@@ -61,12 +67,17 @@ simpleReq uri = do
 
   let resStream = Client.responseAsStream res 
 
-  liftEffect do Stream.onDataString resStream UTF8 (\d -> launchAff_ do Avar.put d bodyBus)
-  body <- Avar.read bodyBus 
+  liftEffect $ Stream.onDataString resStream UTF8 $ \d -> Ref.modify_ (_ <> d) bodyRef
+
+  body <- makeAff \done -> do 
+            Stream.onEnd resStream $ Ref.read bodyRef >>= (done <<< Right)
+            pure nonCanceler
+
   pure (res /\ if String.null body then Nothing else Just body)
   
 helloWorldApp :: Application
-helloWorldApp req send = send $ responseStr status200 [(hContentType /\ "text/plain")] "Hello, World!"
+helloWorldApp (Request req) send = send $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello, World!"
+
 
 helloWorldThrowApp :: Application
 helloWorldThrowApp req send = do 
@@ -94,3 +105,13 @@ spec = do
       it "should return status 500 message, 'Something went wrong!'" $ \port -> do
         _ /\ message  <- simpleReq ("http://localhost:" <> show port)
         (pure message) `shouldReturn` (Just status500.message)
+
+  around (withStubbedApi settings $ testMiddleware helloWorldApp) do
+    describe "MiddlewareApp" do
+      it "should find 'x-test-check' header with value 'test' in the response" $ \port -> do
+        response /\ _  <- simpleReq ("http://localhost:" <> show port)
+
+        let headers = Client.responseHeaders response 
+
+        -- node http headers are all in lower case.
+        Object.lookup "x-test-check" headers `shouldEqual` Just "test"

@@ -7,7 +7,8 @@ import Effect (Effect)
 import Effect.Aff (Milliseconds, runAff_, throwError)
 import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn3, runEffectFn3)
-import Network.Wai (Middleware)
+import Network.Wai (Middleware, ResponseReceived)
+import Network.Wai.Internal (ResponseReceived(..))
 import Network.Warp.Request (withNodeRequest, withNodeResponse)
 import Node.Buffer (Buffer)
 import Node.HTTP as HTTP
@@ -19,10 +20,11 @@ type Options = { timeout :: Milliseconds }
 type ForeignMiddleware = EffectFn3 HTTP.Request HTTP.Response (Effect Unit) Unit
 
 mkMiddlewareFromForeign :: ForeignMiddleware -> Middleware
-mkMiddlewareFromForeign middleware app req send = liftEffect do
+mkMiddlewareFromForeign middleware app req send = liftEffect do 
   withNodeRequest req \nodeReq ->
-    withNodeResponse req \nodeRes ->
-      runEffectFn3 middleware nodeReq nodeRes (runAff_ (either throwError pure) (app req send))
+    withNodeResponse req \nodeRes -> do
+      runEffectFn3 middleware nodeReq nodeRes (runAff_ (either throwError pure) (const unit <$> app req send))
+  pure ResponseReceived
        
 foreign import fromHttpServer :: HTTP.Server -> Net.Server 
 foreign import createServer :: Options -> Effect HTTP.Server 
