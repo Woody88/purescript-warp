@@ -18,6 +18,7 @@ import Node.HTTP as HTTP
 import Node.Stream as Stream
 import Unsafe.Coerce (unsafeCoerce)
 
+-- | Request listener function that passes a `Wai.Request` to the `Application`.
 onRequest :: Server -> Application -> Settings -> Effect Unit 
 onRequest server app settings = FFI.onRequest server \req res -> launchAff_ do 
     waiReq <- liftEffect $ toWaiRequest req res
@@ -36,9 +37,12 @@ onRequest server app settings = FFI.onRequest server \req res -> launchAff_ do
     result <- attempt $ app waiReq (sendResponse settings Nothing requestHeaders res)
 
     case result of 
-        Left e   -> sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
+        Left e   -> do
+            liftEffect $ settings.onException (Just waiReq) e
+            sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
         Right a  -> pure a
 
+-- | Upgrade listener function that passes `Wai.Request` and `Wai.ResponseSocket` to the `Application`
 onUpgrade :: Server -> Application -> Settings -> Effect Unit
 onUpgrade server app settings = FFI.onUpgrade server \req socket rawH -> do 
     let httpres = unsafeCoerce socket :: HTTP.Response -- Passing the socket as HTTP.Response to `sendResponse`

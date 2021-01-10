@@ -21,6 +21,8 @@ import Node.HTTP as HTTP
 import Node.Net.Socket as Socket
 import Unsafe.Coerce (unsafeCoerce)
 
+-- | Generate `Wai.Request` from `HTTP.Request`.
+-- | Insert `HTTP.Request` and `HTTP.Response` in `Wai.Request` vault.
 toWaiRequest :: HTTP.Request -> HTTP.Response -> Effect Request
 toWaiRequest httpreq httpres = do 
   remoteHost <- getRemoteHost

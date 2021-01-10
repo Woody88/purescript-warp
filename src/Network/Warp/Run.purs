@@ -16,13 +16,12 @@ import Node.HTTP as HTTP
 import Node.Net.Server (onError) as Server
 import Prelude (Unit, bind, discard, pure, void, ($))
 
--- -- -- | Run an 'Application' on the given port.
--- -- -- | This calls 'runSettings' with 'defaultSettings'.
+-- | Run an `Application` on the given port.
+-- | This calls `runSettings` with `defaultSettings`.
 run :: Int -> Application -> Effect Unit
 run p app = void $ runSettings (defaultSettings { port = p }) app
     
--- -- TODO: need to refactor I think that there is a much better approach 
--- -- than this. 
+-- | Run an `Application` with the given `Settings`, and return node's http `Server`.
 runSettings ::  Settings -> Application -> Effect Server 
 runSettings settings app = do 
     let options = { port: settings.port, hostname: settings.host, backlog: Nothing }

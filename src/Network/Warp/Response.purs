@@ -29,6 +29,7 @@ import Node.HTTP as HTTP
 import Node.Stream as Stream
 import Unsafe.Coerce (unsafeCoerce)
 
+-- Response function to be used by `Application`.
 sendResponse :: Settings -> Maybe Buffer -> H.RequestHeaders -> HTTP.Response -> Response -> Aff ResponseReceived
 sendResponse settings _ _ reply (ResponseString status headers data_) = do 
   let stream = HTTP.responseAsStream reply

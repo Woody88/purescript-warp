@@ -13,13 +13,22 @@ import Network.Wai (Request, Response, responseStr)
 import Prelude (Unit, pure, unit, ($))
 
 type Settings 
-    = { port :: Int
-      , host :: String 
-      , beforeMainLoop :: Effect Unit
+    = { port :: Int      
+      -- ^ Port to listen on. Default value: 300
+      , host :: String   
+      -- ^ Default value: "127.0.0.1"
+      , beforeMainLoop :: Effect Unit 
+      -- ^ Will be called when server is listening^
       , onException :: Maybe Request -> Error -> Effect Unit 
-      , onExceptionResponse :: Error -> Response
+      -- ^ What to do with exceptions thrown by either the application or server. Default: prints to console
+      , onExceptionResponse :: Error -> Response       
+      -- ^ A function to create `Response` when an exception occurs.
+      -- Default: 500, text/plain, 'Internal Server Error'.
       , serverName :: String
+      -- ^ Default server name: Warp/<version_number>
       , timeout :: Milliseconds
+      -- ^ The number of milliseconds of inactivity before a socket is presumed to have timed out.
+      -- Default 0 (no timeout)
       }
 
 defaultSettings :: Settings 

@@ -10,6 +10,7 @@ import Node.FS.Stats (Stats(..))
 import Node.FS.Stats as FS
 import Node.Path (FilePath)
 
+-- | File information.
 type FileInfo = 
   { name :: FilePath
   , size :: Int 
