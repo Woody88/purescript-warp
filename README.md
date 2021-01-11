@@ -1,6 +1,6 @@
 # Warp
 
-A server library that wraps node's http library with an API inspired by the haskell version.   
+A server handler for WAI which wraps node's http module.
 
 ## Installation
 
@@ -13,26 +13,13 @@ You can install this package by adding the details below to your packages.dhall:
 ```dhall
 let additions =
       { wai =
-        { dependencies = [ "aff", "effect", "http-types", "node-net", "vault" ]
+        { dependencies = [ "aff", "effect", "http-types", "node-net" ]
         , repo = "https://github.com/Woody88/purescript-wai.git"
         , version = "vault"
         }
       , http-types =
         { dependencies = [ "tuples", "unicode", "generics-rep" ]
         , repo = "https://github.com/Woody88/purescript-http-types.git"
-        , version = "master"
-        }
-      , vault =
-        { dependencies =
-          [ "console"
-          , "effect"
-          , "functions"
-          , "maybe"
-          , "prelude"
-          , "psci-support"
-          , "refs"
-          ]
-        , repo = "https://github.com/Woody88/purescript-vault.git"
         , version = "master"
         }
       }
@@ -67,5 +54,5 @@ main = do
 
 app :: Application 
 app req f = do
-    f $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello World!"
+    f $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello, World!"
 ```
