@@ -1,6 +1,17 @@
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Woody88/purescript-wai/blob/master/LICENSE)
+![CI](https://github.com/Woody88/purescript-warp/workflows/CI/badge.svg?branch=master)
 # Warp
 
 A server handler for WAI which wraps node's http module.
+
+Table of Contents
+-----------------
+
+  * [Installation](#installation)
+  * [Usage](#usage)
+  * [Contributing](#contributing)
+  * [Changelog](#changelog)
+  * [License](#license)
 
 ## Installation
 
@@ -15,7 +26,7 @@ let additions =
       { wai =
         { dependencies = [ "aff", "effect", "http-types", "node-net" ]
         , repo = "https://github.com/Woody88/purescript-wai.git"
-        , version = "vault"
+        , version = "master"
         }
       , http-types =
         { dependencies = [ "tuples", "unicode", "generics-rep" ]
@@ -56,3 +67,17 @@ app :: Application
 app req f = do
     f $ responseStr ok200 [(hContentType /\ "text/plain")] "Hello, World!"
 ```
+
+## Contributing
+
+If you are interested in fixing issues and contributing directly to the code base,
+please see the [contributing guidelines](https://github.com/Woody88/purescript-wai/blob/master/CONTRIBUTING.md).
+
+## Changelog
+
+Change log details can be found [here](https://github.com/Woody88/purescript-wai/blob/master/CHANGELOG.md) 
+
+## License
+
+Licensed under the [MIT](https://github.com/Woody88/purescript-wai/blob/vault/LICENSE) license.
+Copyright (c) 2021 Woodson Delhia. All rights reserved.
