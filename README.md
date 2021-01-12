@@ -39,8 +39,6 @@ let additions =
 user@user:~$ spago install warp
 ```
 
-</br>
-
 ## Usage 
 
 ### Hello World 
