@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Woody88/purescript-wai/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Woody88/purescript-warp/blob/master/LICENSE)
 ![CI](https://github.com/Woody88/purescript-warp/workflows/CI/badge.svg?branch=master)
 # Warp
 
@@ -71,13 +71,13 @@ app req f = do
 ## Contributing
 
 If you are interested in fixing issues and contributing directly to the code base,
-please see the [contributing guidelines](https://github.com/Woody88/purescript-wai/blob/master/CONTRIBUTING.md).
+please see the [contributing guidelines](https://github.com/Woody88/purescript-warp/blob/master/CONTRIBUTING.md).
 
 ## Changelog
 
-Change log details can be found [here](https://github.com/Woody88/purescript-wai/blob/master/CHANGELOG.md) 
+Change log details can be found [here](https://github.com/Woody88/purescript-warp/blob/master/CHANGELOG.md) 
 
 ## License
 
-Licensed under the [MIT](https://github.com/Woody88/purescript-wai/blob/vault/LICENSE) license.
+Licensed under the [MIT](https://github.com/Woody88/purescript-warp/blob/master/LICENSE) license.
 Copyright (c) 2021 Woodson Delhia. All rights reserved.
