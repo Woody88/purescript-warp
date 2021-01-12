@@ -18,8 +18,7 @@ Table of Contents
 ***This library is not yet published to pursuit.***  
 You can install this package by adding the details below to your packages.dhall:
 
-<details>
-  <summary><strong>Using Spago</strong></summary>
+<summary><strong>Using Spago</strong></summary>
 
 ```dhall
 let additions =
@@ -39,7 +38,6 @@ let additions =
 ```console
 user@user:~$ spago install warp
 ```
-</details>
 
 </br>
 
