@@ -73,7 +73,6 @@ sendResponse' settings rawH reqHead reply (ResponseFile status headers path fpar
     pure do
       efileStat <- attempt (FSAff.stat path)
       case efileStat >>= eFileInfo of
-        Left e -> sendFile404
         Right fileInfo ->
           liftEffect do
             condReqH <- condReqHeader reqHead
@@ -91,6 +90,7 @@ sendResponse' settings rawH reqHead reply (ResponseFile status headers path fpar
                 _ <- Stream.pipe filestream stream
                 Stream.onEnd filestream mempty
                 pure ResponseReceived
+        _ -> sendFile404
 
 addContentLength :: Int -> ResponseHeaders -> ResponseHeaders
 addContentLength l hdrs = (hContentLength /\ show l) : hdrs

@@ -36,7 +36,7 @@ onRequest server app settings =
           Left e -> do
             settings.onException (Just waiReq) e
             launchAff_ (sendResponse settings Nothing requestHeaders res (settings.onExceptionResponse e))
-          Right _ -> mempty
+          _ -> mempty
 
 -- | Upgrade listener function that passes `Wai.Request` and `Wai.ResponseSocket` to the `Application`
 onUpgrade :: Server -> Application -> Settings -> Effect Unit
@@ -50,4 +50,4 @@ onUpgrade server app settings =
     app waiReq (sendResponse settings (Just rawH) requestHeaders httpres)
       # runAff_ case _ of
           Left e -> launchAff_ (sendResponse settings Nothing requestHeaders httpres (settings.onExceptionResponse e))
-          Right _ -> mempty
+          _ -> mempty
