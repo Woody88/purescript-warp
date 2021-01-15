@@ -3,10 +3,9 @@ module Network.Warp.Server where
 import Prelude
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.Newtype (unwrap)
 import Effect (Effect)
-import Effect.Aff (attempt, launchAff_, runAff_)
-import Network.Wai (Application)
+import Effect.Aff (launchAff_, runAff_)
+import Network.Wai (Application, Request(..))
 import Network.Warp.FFI.Server (onRequest, onUpgrade) as FFI
 import Network.Warp.Request (toWaiRequest)
 import Network.Warp.Response (sendResponse)
@@ -22,7 +21,7 @@ onRequest server app settings =
   FFI.onRequest server \req res -> do
     waiReq <- toWaiRequest req res
     let
-      requestHeaders = _.headers $ unwrap waiReq
+      requestHeaders = case waiReq of Request { headers } -> headers
 
       reqStream = HTTP.requestAsStream req
 
@@ -31,14 +30,13 @@ onRequest server app settings =
     Stream.onError reqStream (settings.onException (Just waiReq))
     -- Handles response error
     Stream.onError resStream \err ->
-      launchAff_ do
-        sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse err
+      launchAff_ (sendResponse settings Nothing requestHeaders res (settings.onExceptionResponse err))
     app waiReq (sendResponse settings Nothing requestHeaders res)
       # runAff_ case _ of
           Left e -> do
             settings.onException (Just waiReq) e
-            launchAff_ $ sendResponse settings Nothing requestHeaders res $ settings.onExceptionResponse e
-          Right _ -> pure unit
+            launchAff_ (sendResponse settings Nothing requestHeaders res (settings.onExceptionResponse e))
+          Right _ -> mempty
 
 -- | Upgrade listener function that passes `Wai.Request` and `Wai.ResponseSocket` to the `Application`
 onUpgrade :: Server -> Application -> Settings -> Effect Unit
@@ -48,9 +46,8 @@ onUpgrade server app settings =
       httpres = unsafeCoerce socket :: HTTP.Response -- Passing the socket as HTTP.Response to `sendResponse`
     waiReq <- toWaiRequest req httpres
     let
-      requestHeaders = _.headers $ unwrap waiReq
-    launchAff_ do
-      result <- attempt $ app waiReq (sendResponse settings (Just rawH) requestHeaders httpres)
-      case result of
-        Left e -> sendResponse settings Nothing requestHeaders httpres $ settings.onExceptionResponse e
-        Right a -> pure a
+      requestHeaders = case waiReq of Request { headers } -> headers
+    app waiReq (sendResponse settings (Just rawH) requestHeaders httpres)
+      # runAff_ case _ of
+          Left e -> launchAff_ (sendResponse settings Nothing requestHeaders httpres (settings.onExceptionResponse e))
+          Right _ -> mempty
