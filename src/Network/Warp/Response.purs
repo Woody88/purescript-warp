@@ -1,6 +1,7 @@
 module Network.Warp.Response where
 
 import Prelude
+
 import Data.Array ((:))
 import Data.Either (Either(..), note)
 import Data.Foldable (traverse_)
@@ -9,7 +10,7 @@ import Data.Newtype (unwrap)
 import Data.Tuple (Tuple(..))
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (Aff, error, try)
+import Effect.Aff (Aff, attempt, error)
 import Effect.Class (liftEffect)
 import Network.HTTP.Types.Header (Header, ResponseHeaders, hContentLength, hContentType, hServer)
 import Network.HTTP.Types.Header as H
@@ -43,7 +44,7 @@ sendResponse' settings _ _ reply (ResponseString status headers data_) = do
   traverse_ (setHeader (HTTP.setHeader reply)) (addServerName settings.serverName headers)
   _ <- Stream.writeString stream UTF8 data_ mempty
   Stream.end stream mempty
-  pure $ pure ResponseReceived
+  pure (pure ResponseReceived)
 
 sendResponse' settings _ _ reply (ResponseStream status headers respstream) = do
   let
@@ -53,7 +54,7 @@ sendResponse' settings _ _ reply (ResponseStream status headers respstream) = do
   traverse_ (setHeader (HTTP.setHeader reply)) (addServerName settings.serverName headers)
   _ <- Stream.pipe respstream stream
   Stream.onEnd respstream mempty
-  pure $ pure ResponseReceived
+  pure (pure ResponseReceived)
 
 -- TODO: need to find a better approach than unsafeCoerce
 sendResponse' settings rawHeader _ reply (ResponseSocket cb) =
@@ -70,7 +71,7 @@ sendResponse' settings rawH reqHead reply (ResponseFile status headers path fpar
     eFileInfo = note (error "Could not generate fileInfo") <<< mkFileInfo path
   in
     pure do
-      efileStat <- try $ FSAff.stat path
+      efileStat <- attempt (FSAff.stat path)
       case efileStat >>= eFileInfo of
         Left e -> sendFile404
         Right fileInfo ->
