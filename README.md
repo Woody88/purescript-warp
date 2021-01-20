@@ -22,7 +22,12 @@ You can install this package by adding the details below to your packages.dhall:
 
 ```dhall
 let additions =
-      { wai =
+      { warp =
+        { dependencies = [ "console", "effect", "generics-rep", "node-fs-aff", "node-http", "wai" ]
+        , repo = "https://github.com/Woody88/purescript-warp.git"
+        , version = "master"
+        }
+      , wai =
         { dependencies = [ "aff", "effect", "http-types", "node-net" ]
         , repo = "https://github.com/Woody88/purescript-wai.git"
         , version = "master"
