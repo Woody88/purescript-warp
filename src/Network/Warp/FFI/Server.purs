@@ -2,9 +2,8 @@ module Network.Warp.FFI.Server where
 
 import Prelude
 
-import Data.Either (either)
 import Effect (Effect)
-import Effect.Aff (Milliseconds, makeAff, nonCanceler, runAff_, throwError)
+import Effect.Aff (Milliseconds, makeAff, nonCanceler, runAff_)
 import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn3, runEffectFn3)
 import Network.Wai (Middleware)

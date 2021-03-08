@@ -2,7 +2,7 @@ module Test.Warp.ServerSpec where
 
 import Prelude
 
-import Data.Either (Either(..), fromLeft)
+import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.Tuple.Nested (type (/\), (/\))
@@ -20,7 +20,6 @@ import Node.HTTP as HTTP
 import Node.HTTP.Client as Client
 import Node.Net.Server as Net
 import Node.Stream as Stream
-import Partial.Unsafe (unsafePartial)
 import Test.Spec (Spec, around, describe, it)
 import Test.Spec.Assertions (shouldEqual, shouldReturn)
 import Unsafe.Coerce (unsafeCoerce)
@@ -37,10 +36,9 @@ getServerPort httpserver = do
   makeAff \done -> do 
     maddr <- Net.address netserver
     case maddr of 
-      Nothing -> done <<< Left $ error "Server is not listening, verify that its properly binded to a port."
-      Just addr -> done $ Right $ unsafePartial $ fromLeft $ addr
+      Nothing   -> done <<< Left $ error "Server is not listening, verify that its properly binded to a port."
+      Just addr -> done $ either Right (Left <<< error) addr
     pure nonCanceler
-
 
 serveStubbedApi :: Settings -> Application -> Aff HTTP.Server
 serveStubbedApi settings app = liftEffect $ runSettings settings app 
